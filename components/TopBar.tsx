@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   Menu,
   Search,
@@ -8,6 +11,7 @@ import {
   Calendar,
   Settings,
   Building2,
+  LogOut,
 } from "lucide-react";
 
 /** Small red count badge used on the notification / email icons. */
@@ -21,9 +25,18 @@ function CountBadge({ count }: { count: number }) {
 
 export default function TopBar({
   onToggleSidebar,
+  onLogout,
 }: {
   onToggleSidebar?: () => void;
+  onLogout?: () => void;
 }) {
+  const [facilityMenuOpen, setFacilityMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    setFacilityMenuOpen(false);
+    onLogout?.();
+  };
+
   return (
     <header className="flex items-center gap-3 md:gap-4 w-full h-[68px] px-3 md:px-5 bg-white border-b border-[#eceff1] font-sans box-border">
       {/* Far left: hamburger */}
@@ -37,7 +50,7 @@ export default function TopBar({
       </button>
 
       {/* Search field */}
-      <div className="flex items-center gap-2.5 flex-1 min-w-[140px] max-w-[560px] h-[42px] px-3 bg-white border border-[#d7dde1] rounded-[10px]">
+      <div className="flex items-center gap-2.5 flex-1 min-w-[240px] max-w-[560px] h-[42px] px-3 bg-white border border-[#d7dde1] rounded-[10px]">
         <Search size={18} strokeWidth={2} color="#9ca3af" className="shrink-0" />
         <input
           type="text"
@@ -98,24 +111,69 @@ export default function TopBar({
       {/* Push the hospital selector to the far right */}
       <div className="hidden lg:block flex-1" />
 
-      {/* Hospital selector */}
-      <button
-        type="button"
-        className="hidden lg:flex items-center gap-2.5 h-12 px-3.5 bg-white border border-[#cfd6db] rounded-xl cursor-pointer shrink-0"
-      >
-        <span className="flex items-center justify-center shrink-0">
-          <Building2 size={18} strokeWidth={2} color="#1f2937" />
-        </span>
-        <span className="flex flex-col leading-[1.2] text-left min-w-0">
-          <span className="text-[13px] font-semibold text-[#1f2937] whitespace-nowrap">
-            Fiker Selam General Hospital
+      {/* Facility selector + account menu */}
+      <div className="relative hidden lg:block shrink-0">
+        {facilityMenuOpen && (
+          <div
+            className="fixed inset-0 z-30"
+            onClick={() => setFacilityMenuOpen(false)}
+            aria-hidden
+          />
+        )}
+
+        <button
+          type="button"
+          onClick={() => setFacilityMenuOpen((v) => !v)}
+          aria-expanded={facilityMenuOpen}
+          className="flex items-center gap-2.5 h-12 px-3.5 bg-white border border-[#cfd6db] rounded-xl cursor-pointer"
+        >
+          <span className="flex items-center justify-center shrink-0">
+            <Building2 size={18} strokeWidth={2} color="#1f2937" />
           </span>
-          <span className="text-[11px] font-normal text-[#8b95a1] whitespace-nowrap">
-            Addis Ababa, Ethiopia
+          <span className="flex flex-col leading-[1.2] text-left min-w-0">
+            <span className="text-[13px] font-semibold text-[#1f2937] whitespace-nowrap">
+              Fiker Selam General Hospital
+            </span>
+            <span className="text-[11px] font-normal text-[#8b95a1] whitespace-nowrap">
+              Addis Ababa, Ethiopia
+            </span>
           </span>
-        </span>
-        <ChevronDown size={18} strokeWidth={2} color="#111827" className="shrink-0" />
-      </button>
+          <ChevronDown
+            size={18}
+            strokeWidth={2}
+            color="#111827"
+            className={`shrink-0 transition-transform duration-200 ${
+              facilityMenuOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {facilityMenuOpen && (
+          <div className="absolute z-40 top-full right-0 mt-2 w-64 bg-white border border-[#E2E8F0] rounded-xl shadow-lg overflow-hidden">
+            <div className="flex items-center gap-3 p-3.5 border-b border-[#F1F5F9]">
+              <span className="w-9 h-9 rounded-lg bg-[#0F766E]/10 flex items-center justify-center shrink-0">
+                <Building2 size={18} strokeWidth={2} className="text-[#0F766E]" />
+              </span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[13px] font-semibold text-[#1f2937] whitespace-nowrap overflow-hidden text-ellipsis">
+                  Fiker Selam General Hospital
+                </span>
+                <span className="text-[11px] text-[#8b95a1] whitespace-nowrap">
+                  Addis Ababa, Ethiopia
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <LogOut size={16} strokeWidth={2} />
+              Log Out
+            </button>
+          </div>
+        )}
+      </div>
     </header>
   );
 }

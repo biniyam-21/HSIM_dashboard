@@ -1,447 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Home,
-  Users,
-  CalendarClock,
-  Stethoscope,
-  BedDouble,
-  Siren,
-  HeartPulse,
-  Scissors,
-  Activity,
-  FlaskConical,
-  ScanLine,
-  Bot,
-  Images,
-  Pill,
-  Package,
-  ShoppingCart,
-  ReceiptText,
-  ShieldCheck,
-  Landmark,
-  UsersRound,
-  CalendarCheck,
-  Boxes,
-  BarChart3,
-  FileText,
-  UserCog,
-  Settings,
   HelpCircle,
   ChevronDown,
   ChevronRight,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
-
-type Child = { label: string };
-
-type Item = {
-  label: string;
-  icon: LucideIcon;
-  badge?: string;
-  children: Child[];
-};
-
-type Group = {
-  title: string;
-  items: Item[];
-};
-
-/* ============================================================================
-   Enterprise HMS navigation — every top-level module expanded into documented,
-   workflow-based subroutes (Epic / Cerner / Oracle Health style).
-   ========================================================================== */
-const GROUPS: Group[] = [
-  {
-    title: "PATIENT & CLINICAL",
-    items: [
-      {
-        label: "Patient Management",
-        icon: Users,
-        children: [
-          { label: "Patient Registration" },
-          { label: "Patient Search" },
-          { label: "Duplicate Management" },
-          { label: "National ID Verification" },
-          { label: "Demographics & Contacts" },
-          { label: "Consent & Documents" },
-          { label: "Patient Timeline" },
-        ],
-      },
-      {
-        label: "Appointments & Queue",
-        icon: CalendarClock,
-        children: [
-          { label: "Appointment Scheduling" },
-          { label: "Slot & Calendar Management" },
-          { label: "Queue Management" },
-          { label: "Token Display Board" },
-          { label: "Check-In / Check-Out" },
-          { label: "No-Show & Rescheduling" },
-          { label: "Referral Management" },
-        ],
-      },
-      {
-        label: "OPD Management",
-        icon: Stethoscope,
-        children: [
-          { label: "OPD Registration" },
-          { label: "Triage & Vitals" },
-          { label: "Consultation" },
-          { label: "Clinical Notes (EMR)" },
-          { label: "Prescriptions" },
-          { label: "Investigation Orders" },
-          { label: "Follow-Up Scheduling" },
-        ],
-      },
-      {
-        label: "IPD Management",
-        icon: BedDouble,
-        children: [
-          { label: "Admission" },
-          { label: "Bed Allocation" },
-          { label: "Ward Management" },
-          { label: "Transfers" },
-          { label: "Doctor Rounds & Progress Notes" },
-          { label: "Nursing Orders" },
-          { label: "Discharge Summary" },
-        ],
-      },
-      {
-        label: "Emergency (ER)",
-        icon: Siren,
-        children: [
-          { label: "ER Registration" },
-          { label: "Triage & Acuity" },
-          { label: "Emergency Bed Board" },
-          { label: "Trauma & Critical Care" },
-          { label: "Ambulance Dispatch" },
-          { label: "ER Observation" },
-          { label: "Admission / Referral" },
-        ],
-      },
-      {
-        label: "Nursing Management",
-        icon: HeartPulse,
-        children: [
-          { label: "Nursing Station" },
-          { label: "Medication Administration Record" },
-          { label: "Vitals Charting" },
-          { label: "Care Plans" },
-          { label: "Intake & Output" },
-          { label: "Shift Handover" },
-          { label: "Nursing Tasks & Alerts" },
-        ],
-      },
-      {
-        label: "Operation Theatre",
-        icon: Scissors,
-        children: [
-          { label: "Surgery Scheduling" },
-          { label: "Pre-Operative Assessment" },
-          { label: "OT Safety Checklist" },
-          { label: "Intra-Operative Notes" },
-          { label: "Anesthesia Records" },
-          { label: "Recovery Notes (PACU)" },
-          { label: "Consumables & Implants" },
-          { label: "OT Utilization" },
-        ],
-      },
-      {
-        label: "ICU Management",
-        icon: Activity,
-        children: [
-          { label: "ICU Admission" },
-          { label: "ICU Bed Board" },
-          { label: "Critical Care Charting" },
-          { label: "Ventilator Management" },
-          { label: "Fluid Balance" },
-          { label: "Severity Scoring (APACHE/SOFA)" },
-          { label: "ICU Handover" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "DIAGNOSTICS & LABORATORY",
-    items: [
-      {
-        label: "Laboratory (LIS)",
-        icon: FlaskConical,
-        children: [
-          { label: "Test Orders" },
-          { label: "Sample Collection" },
-          { label: "Sample Tracking" },
-          { label: "Result Entry" },
-          { label: "Result Validation" },
-          { label: "Analyzer Interface" },
-          { label: "Pathology" },
-          { label: "Quality Control" },
-          { label: "Test Catalog" },
-        ],
-      },
-      {
-        label: "Radiology (X-Ray, MRI, CT)",
-        icon: ScanLine,
-        children: [
-          { label: "Imaging Orders" },
-          { label: "Scheduling & Slots" },
-          { label: "Modality Worklist" },
-          { label: "Technologist Console" },
-          { label: "Reporting & Sign-Off" },
-          { label: "Critical Findings Alerts" },
-          { label: "Radiology Catalog" },
-        ],
-      },
-      {
-        label: "AI Report Writer",
-        icon: Bot,
-        badge: "New",
-        children: [
-          { label: "Draft Generator" },
-          { label: "Clinical Summaries" },
-          { label: "Template Library" },
-          { label: "Voice Dictation" },
-          { label: "Review & Approval" },
-          { label: "Model Settings" },
-        ],
-      },
-      {
-        label: "PACS & Image Viewer",
-        icon: Images,
-        children: [
-          { label: "Study Browser" },
-          { label: "DICOM Viewer" },
-          { label: "Image Comparison" },
-          { label: "Annotations & Measurements" },
-          { label: "Image Sharing" },
-          { label: "Archive & Retrieval" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "PHARMACY & INVENTORY",
-    items: [
-      {
-        label: "Pharmacy Management",
-        icon: Pill,
-        children: [
-          { label: "Prescription Queue" },
-          { label: "Dispensing" },
-          { label: "Drug Formulary" },
-          { label: "Drug Interaction Checks" },
-          { label: "Batch & Expiry Tracking" },
-          { label: "Narcotics Register" },
-          { label: "Returns & Recalls" },
-          { label: "Pharmacy Billing" },
-        ],
-      },
-      {
-        label: "Inventory & Stock",
-        icon: Package,
-        children: [
-          { label: "Stock Overview" },
-          { label: "Goods Receipt (GRN)" },
-          { label: "Stock Issue & Requisition" },
-          { label: "Inter-Store Transfers" },
-          { label: "Stock Adjustments" },
-          { label: "Reorder & Par Levels" },
-          { label: "Expiry & Batch Management" },
-          { label: "Physical Count & Audit" },
-        ],
-      },
-      {
-        label: "Procurement",
-        icon: ShoppingCart,
-        children: [
-          { label: "Purchase Requisitions" },
-          { label: "Purchase Orders" },
-          { label: "Supplier Management" },
-          { label: "Quotations & Comparison" },
-          { label: "Goods Receipt" },
-          { label: "Invoice Matching (3-Way)" },
-          { label: "Contracts" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "FINANCE & BILLING",
-    items: [
-      {
-        label: "Billing & Invoicing",
-        icon: ReceiptText,
-        children: [
-          { label: "OPD Billing" },
-          { label: "IPD / Interim Billing" },
-          { label: "Invoice Management" },
-          { label: "Payment Collection" },
-          { label: "Deposits & Advances" },
-          { label: "Refunds & Adjustments" },
-          { label: "Package & Tariff Management" },
-          { label: "Credit Notes" },
-        ],
-      },
-      {
-        label: "Insurance Management",
-        icon: ShieldCheck,
-        children: [
-          { label: "Payer & Scheme Setup" },
-          { label: "Eligibility Verification" },
-          { label: "Pre-Authorization" },
-          { label: "Claims Submission" },
-          { label: "Claim Tracking" },
-          { label: "Denial Management" },
-          { label: "Reconciliation" },
-        ],
-      },
-      {
-        label: "Finance & Accounts",
-        icon: Landmark,
-        children: [
-          { label: "General Ledger" },
-          { label: "Accounts Receivable" },
-          { label: "Accounts Payable" },
-          { label: "Cash & Bank" },
-          { label: "Journal Entries" },
-          { label: "Cost Centers" },
-          { label: "Financial Statements" },
-          { label: "Tax Management" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "HR & ADMINISTRATION",
-    items: [
-      {
-        label: "HR & Payroll",
-        icon: UsersRound,
-        children: [
-          { label: "Employee Directory" },
-          { label: "Recruitment & Onboarding" },
-          { label: "Payroll Processing" },
-          { label: "Salary Structure" },
-          { label: "Loans & Advances" },
-          { label: "Statutory Deductions" },
-          { label: "Performance Appraisal" },
-          { label: "Credentialing & Licenses" },
-        ],
-      },
-      {
-        label: "Attendance & Leave",
-        icon: CalendarCheck,
-        children: [
-          { label: "Attendance Tracking" },
-          { label: "Shift & Roster Management" },
-          { label: "Duty Scheduling" },
-          { label: "Leave Requests" },
-          { label: "Leave Balances" },
-          { label: "Overtime Management" },
-          { label: "Biometric Integration" },
-        ],
-      },
-      {
-        label: "Asset Management",
-        icon: Boxes,
-        children: [
-          { label: "Asset Register" },
-          { label: "Asset Tracking" },
-          { label: "Preventive Maintenance" },
-          { label: "Breakdown & Work Orders" },
-          { label: "Calibration Schedule" },
-          { label: "Depreciation" },
-          { label: "Disposal & Retirement" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "REPORTS & ANALYTICS",
-    items: [
-      {
-        label: "Dashboard & Analysis",
-        icon: BarChart3,
-        children: [
-          { label: "Executive Dashboard" },
-          { label: "Clinical Analytics" },
-          { label: "Financial Analytics" },
-          { label: "Operational KPIs" },
-          { label: "Bed Occupancy Analytics" },
-          { label: "Revenue Cycle Analytics" },
-          { label: "Custom Dashboards" },
-        ],
-      },
-      {
-        label: "Report Center",
-        icon: FileText,
-        children: [
-          { label: "Regulatory & Statutory Reports" },
-          { label: "MOH / Public Health Reports" },
-          { label: "Financial Reports" },
-          { label: "Clinical Reports" },
-          { label: "Ad-Hoc Report Builder" },
-          { label: "Scheduled Reports" },
-          { label: "Export Center" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "SYSTEM SETTINGS",
-    items: [
-      {
-        label: "User Management",
-        icon: UserCog,
-        children: [
-          { label: "Users & Accounts" },
-          { label: "Roles & Permissions" },
-          { label: "Access Control (RBAC)" },
-          { label: "Departments & Facilities" },
-          { label: "Session Management" },
-          { label: "Password Policies" },
-          { label: "Audit Logs" },
-        ],
-      },
-      {
-        label: "System Settings",
-        icon: Settings,
-        children: [
-          { label: "Hospital Profile" },
-          { label: "Multi-Tenant / Branch Setup" },
-          { label: "Master Data & Code Sets" },
-          { label: "Templates & Documents" },
-          { label: "Integrations & APIs" },
-          { label: "Notifications (SMS/Email)" },
-          { label: "Localization & Language" },
-          { label: "Backup & Data Retention" },
-        ],
-      },
-    ],
-  },
-];
-
-/** Minimalist outline medical cross, 2px stroke, pure white. */
-function MedicalCross() {
-  return (
-    <svg
-      width="26"
-      height="26"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#ffffff"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <path d="M12 8v8M8 12h8" />
-    </svg>
-  );
-}
+import { NAV_GROUPS, slugify, type NavItem } from "@/lib/navigation";
+import BrandMark from "@/components/BrandMark";
 
 function GroupHeader({ title }: { title: string }) {
   return (
@@ -459,13 +30,16 @@ function MenuItem({
   collapsed,
   open,
   onClick,
+  pathname,
 }: {
-  item: Item;
+  item: NavItem;
   collapsed: boolean;
   open: boolean;
   onClick: () => void;
+  pathname: string;
 }) {
-  const Icon = item.icon;
+  const Icon: LucideIcon = item.icon;
+  const moduleSlug = slugify(item.label);
 
   // Collapsed rail: centered icon only, tooltip on hover, badge shown as a dot.
   if (collapsed) {
@@ -515,30 +89,57 @@ function MenuItem({
       {/* Sub-routes */}
       {open && (
         <div className="mt-1 ml-[13px] pl-[16px] border-l border-white/10 flex flex-col gap-0.5">
-          {item.children.map((child) => (
-            <button
-              key={child.label}
-              type="button"
-              className="text-left text-[12.5px] leading-snug text-white/65 hover:text-white py-1.5 px-2 rounded-md hover:bg-white/5 transition-colors"
-            >
-              {child.label}
-            </button>
-          ))}
+          {item.children.map((child) => {
+            const href = `/modules/${moduleSlug}/${slugify(child.label)}`;
+            const active = pathname === href;
+            return (
+              <Link
+                key={child.label}
+                href={href}
+                className={`text-left text-[12.5px] leading-snug py-1.5 px-2 rounded-md transition-colors ${
+                  active
+                    ? "text-white bg-white/10 font-medium"
+                    : "text-white/65 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                {child.label}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
+function findModuleForPath(pathname: string): string | null {
+  const match = pathname.match(/^\/modules\/([^/]+)\//);
+  if (!match) return null;
+  const moduleSlug = match[1];
+  for (const group of NAV_GROUPS) {
+    for (const item of group.items) {
+      if (slugify(item.label) === moduleSlug) return item.label;
+    }
+  }
+  return null;
+}
+
 export default function Sidebar({
   open = true,
   onExpand,
+  onLogout,
 }: {
   open?: boolean;
   onExpand?: () => void;
+  onLogout?: () => void;
 }) {
-  // Which module is expanded. Accordion state keyed by unique top-level label.
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const pathname = usePathname();
+  // Which module is expanded. Accordion state keyed by unique top-level label,
+  // seeded so the module containing the active route starts open.
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    const active = findModuleForPath(pathname);
+    return active ? { [active]: true } : {};
+  });
   const toggle = (label: string) =>
     setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
 
@@ -555,6 +156,15 @@ export default function Sidebar({
     }
   };
 
+  const dashboardActive = pathname === "/dashboard";
+
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const handleLogout = () => {
+    setProfileOpen(false);
+    onLogout?.();
+  };
+
   return (
     <aside
       className={`fixed top-0 left-0 z-20 h-screen bg-[#032b2b] flex flex-col text-white font-sans transition-all duration-300 ease-in-out w-[260px] min-w-[260px] lg:min-w-0 lg:translate-x-0 ${
@@ -567,7 +177,7 @@ export default function Sidebar({
           collapsed ? "justify-center px-2" : "gap-3 px-5"
         }`}
       >
-        <MedicalCross />
+        <BrandMark />
         {!collapsed && (
           <div className="flex flex-col leading-[1.1] min-w-0">
             <span className="text-[22px] font-bold text-white tracking-[0.5px]">
@@ -587,23 +197,32 @@ export default function Sidebar({
         }`}
       >
         {/* 2. Active Menu Item */}
-        <button
-          type="button"
+        <Link
+          href="/dashboard"
           title={collapsed ? "Dashboard" : undefined}
-          className={`flex items-center bg-[#0a4a4a] rounded-lg cursor-pointer ${
-            collapsed
-              ? "justify-center py-2.5"
-              : "gap-3 w-full py-[11px] px-3 text-left"
-          }`}
+          className={`flex items-center rounded-lg cursor-pointer ${
+            dashboardActive ? "bg-[#0a4a4a]" : "hover:bg-white/5"
+          } ${collapsed ? "justify-center py-2.5" : "gap-3 w-full py-[11px] px-3 text-left"}`}
         >
-          <Home size={collapsed ? 20 : 18} strokeWidth={2} color="#26a69a" className="shrink-0" />
+          <Home
+            size={collapsed ? 20 : 18}
+            strokeWidth={2}
+            color={dashboardActive ? "#26a69a" : "#ffffff"}
+            className="shrink-0"
+          />
           {!collapsed && (
-            <span className="text-sm font-medium text-[#26a69a]">Dashboard</span>
+            <span
+              className={`text-sm font-medium ${
+                dashboardActive ? "text-[#26a69a]" : "text-white"
+              }`}
+            >
+              Dashboard
+            </span>
           )}
-        </button>
+        </Link>
 
         {/* 3 + 4. Groups and their expandable items */}
-        {GROUPS.map((group) => (
+        {NAV_GROUPS.map((group) => (
           <div key={group.title} className="mt-[22px]">
             {collapsed ? (
               <div className="mx-2 mb-2 h-px bg-white/10" />
@@ -618,6 +237,7 @@ export default function Sidebar({
                   collapsed={collapsed}
                   open={!!expanded[item.label]}
                   onClick={() => handleItemClick(item.label)}
+                  pathname={pathname}
                 />
               ))}
             </div>
@@ -627,10 +247,19 @@ export default function Sidebar({
 
       {/* 5. Sticky Footer */}
       <footer
-        className={`pt-3 pb-5 flex flex-col gap-3 border-t border-white/5 ${
+        className={`relative pt-3 pb-5 flex flex-col gap-3 border-t border-white/5 ${
           collapsed ? "px-2 items-center" : "px-5"
         }`}
       >
+        {/* Backdrop to close the profile menu on outside click */}
+        {profileOpen && (
+          <div
+            className="fixed inset-0 z-30"
+            onClick={() => setProfileOpen(false)}
+            aria-hidden
+          />
+        )}
+
         {collapsed ? (
           <>
             {/* Help */}
@@ -642,18 +271,39 @@ export default function Sidebar({
               <HelpCircle size={18} strokeWidth={2.25} color="#032b2b" />
             </button>
             {/* Profile */}
-            <button
-              type="button"
-              title="Dr. Eyob Tesfaye — System Administrator"
-              className="cursor-pointer shrink-0"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&h=200&fit=crop&crop=faces"
-                alt="Dr. Eyob Tesfaye"
-                className="w-9 h-9 rounded-full object-cover bg-[#0a4a4a]"
-              />
-            </button>
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                title="Dr. Eyob Tesfaye — System Administrator"
+                onClick={() => setProfileOpen((v) => !v)}
+                className="cursor-pointer"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&h=200&fit=crop&crop=faces"
+                  alt="Dr. Eyob Tesfaye"
+                  className="w-9 h-9 rounded-full object-cover bg-[#0a4a4a]"
+                />
+              </button>
+              {profileOpen && (
+                <div className="absolute z-40 left-full bottom-0 ml-2 w-48 bg-[#0a3a3a] border border-white/10 rounded-xl shadow-lg py-1.5 overflow-hidden">
+                  <div className="px-3 py-2 border-b border-white/10">
+                    <p className="text-xs font-bold text-white whitespace-nowrap">
+                      Dr. Eyob Tesfaye
+                    </p>
+                    <p className="text-[10px] text-[#8fb0b0]">System Administrator</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-sm text-red-300 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut size={16} strokeWidth={2} />
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <>
@@ -682,31 +332,50 @@ export default function Sidebar({
             </button>
 
             {/* User Profile Card */}
-            <button
-              type="button"
-              className="flex items-center gap-3 w-full py-2.5 px-3 bg-[#021f1f] rounded-xl border border-white/[0.08] cursor-pointer text-left"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&h=200&fit=crop&crop=faces"
-                alt="Dr. Eyob Tesfaye"
-                className="w-9 h-9 rounded-full object-cover shrink-0 bg-[#0a4a4a]"
-              />
-              <span className="flex flex-col leading-[1.2] min-w-0">
-                <span className="text-sm font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">
-                  Dr. Eyob Tesfaye
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setProfileOpen((v) => !v)}
+                aria-expanded={profileOpen}
+                className="flex items-center gap-3 w-full py-2.5 px-3 bg-[#021f1f] rounded-xl border border-white/[0.08] cursor-pointer text-left"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&h=200&fit=crop&crop=faces"
+                  alt="Dr. Eyob Tesfaye"
+                  className="w-9 h-9 rounded-full object-cover shrink-0 bg-[#0a4a4a]"
+                />
+                <span className="flex flex-col leading-[1.2] min-w-0">
+                  <span className="text-sm font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">
+                    Dr. Eyob Tesfaye
+                  </span>
+                  <span className="text-[11px] font-normal text-[#8fb0b0] mt-0.5">
+                    System Administrator
+                  </span>
                 </span>
-                <span className="text-[11px] font-normal text-[#8fb0b0] mt-0.5">
-                  System Administrator
-                </span>
-              </span>
-              <ChevronDown
-                size={18}
-                strokeWidth={2}
-                color="#7f9a9a"
-                className="ml-auto shrink-0"
-              />
-            </button>
+                <ChevronDown
+                  size={18}
+                  strokeWidth={2}
+                  color="#7f9a9a"
+                  className={`ml-auto shrink-0 transition-transform duration-200 ${
+                    profileOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {profileOpen && (
+                <div className="absolute z-40 bottom-full left-0 right-0 mb-2 bg-[#0a3a3a] border border-white/10 rounded-xl shadow-lg py-1.5 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-sm text-red-300 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut size={16} strokeWidth={2} />
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         )}
       </footer>
