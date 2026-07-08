@@ -8,7 +8,6 @@ import {
   HelpCircle,
   ChevronDown,
   ChevronRight,
-  LogOut,
   type LucideIcon,
 } from "lucide-react";
 import { NAV_GROUPS, slugify, type NavItem } from "@/lib/navigation";
@@ -158,13 +157,6 @@ export default function Sidebar({
 
   const dashboardActive = pathname === "/dashboard";
 
-  const [profileOpen, setProfileOpen] = useState(false);
-
-  const handleLogout = () => {
-    setProfileOpen(false);
-    onLogout?.();
-  };
-
   return (
     <aside
       className={`fixed top-0 left-0 z-20 h-screen bg-[#032b2b] flex flex-col text-white font-sans transition-all duration-300 ease-in-out w-[260px] min-w-[260px] lg:min-w-0 lg:translate-x-0 ${
@@ -251,132 +243,37 @@ export default function Sidebar({
           collapsed ? "px-2 items-center" : "px-5"
         }`}
       >
-        {/* Backdrop to close the profile menu on outside click */}
-        {profileOpen && (
-          <div
-            className="fixed inset-0 z-30"
-            onClick={() => setProfileOpen(false)}
-            aria-hidden
-          />
-        )}
-
         {collapsed ? (
-          <>
-            {/* Help */}
-            <button
-              type="button"
-              title="Need Help? — Open Support Ticket"
-              className="w-10 h-10 rounded-full bg-[#26a69a] flex items-center justify-center cursor-pointer shrink-0"
-            >
-              <HelpCircle size={18} strokeWidth={2.25} color="#032b2b" />
-            </button>
-            {/* Profile */}
-            <div className="relative shrink-0">
-              <button
-                type="button"
-                title="Dr. Eyob Tesfaye — System Administrator"
-                onClick={() => setProfileOpen((v) => !v)}
-                className="cursor-pointer"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&h=200&fit=crop&crop=faces"
-                  alt="Dr. Eyob Tesfaye"
-                  className="w-9 h-9 rounded-full object-cover bg-[#0a4a4a]"
-                />
-              </button>
-              {profileOpen && (
-                <div className="absolute z-40 left-full bottom-0 ml-2 w-48 bg-[#0a3a3a] border border-white/10 rounded-xl shadow-lg py-1.5 overflow-hidden">
-                  <div className="px-3 py-2 border-b border-white/10">
-                    <p className="text-xs font-bold text-white whitespace-nowrap">
-                      Dr. Eyob Tesfaye
-                    </p>
-                    <p className="text-[10px] text-[#8fb0b0]">System Administrator</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-sm text-red-300 hover:bg-red-500/10 transition-colors"
-                  >
-                    <LogOut size={16} strokeWidth={2} />
-                    Log Out
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
+          <button
+            type="button"
+            title="Need Help? — Open Support Ticket"
+            className="w-10 h-10 rounded-full bg-[#26a69a] flex items-center justify-center cursor-pointer shrink-0"
+          >
+            <HelpCircle size={18} strokeWidth={2.25} color="#032b2b" />
+          </button>
         ) : (
-          <>
-            {/* Help Card */}
-            <button
-              type="button"
-              className="flex items-center gap-3 w-full p-3 bg-[#0a3a3a] rounded-xl cursor-pointer text-left"
-            >
-              <span className="w-[34px] h-[34px] rounded-full bg-[#26a69a] flex items-center justify-center shrink-0">
-                <HelpCircle size={18} strokeWidth={2.25} color="#032b2b" />
+          <button
+            type="button"
+            className="flex items-center gap-3 w-full p-3 bg-[#0a3a3a] rounded-xl cursor-pointer text-left"
+          >
+            <span className="w-[34px] h-[34px] rounded-full bg-[#26a69a] flex items-center justify-center shrink-0">
+              <HelpCircle size={18} strokeWidth={2.25} color="#032b2b" />
+            </span>
+            <span className="flex flex-col leading-[1.2] min-w-0">
+              <span className="text-sm font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">
+                Need Help?
               </span>
-              <span className="flex flex-col leading-[1.2] min-w-0">
-                <span className="text-sm font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">
-                  Need Help?
-                </span>
-                <span className="text-[11px] font-normal text-[#8fb0b0] mt-0.5">
-                  Open Support Ticket
-                </span>
+              <span className="text-[11px] font-normal text-[#8fb0b0] mt-0.5">
+                Open Support Ticket
               </span>
-              <ChevronRight
-                size={18}
-                strokeWidth={2.25}
-                color="#26a69a"
-                className="ml-auto shrink-0"
-              />
-            </button>
-
-            {/* User Profile Card */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setProfileOpen((v) => !v)}
-                aria-expanded={profileOpen}
-                className="flex items-center gap-3 w-full py-2.5 px-3 bg-[#021f1f] rounded-xl border border-white/[0.08] cursor-pointer text-left"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&h=200&fit=crop&crop=faces"
-                  alt="Dr. Eyob Tesfaye"
-                  className="w-9 h-9 rounded-full object-cover shrink-0 bg-[#0a4a4a]"
-                />
-                <span className="flex flex-col leading-[1.2] min-w-0">
-                  <span className="text-sm font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">
-                    Dr. Eyob Tesfaye
-                  </span>
-                  <span className="text-[11px] font-normal text-[#8fb0b0] mt-0.5">
-                    System Administrator
-                  </span>
-                </span>
-                <ChevronDown
-                  size={18}
-                  strokeWidth={2}
-                  color="#7f9a9a"
-                  className={`ml-auto shrink-0 transition-transform duration-200 ${
-                    profileOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {profileOpen && (
-                <div className="absolute z-40 bottom-full left-0 right-0 mb-2 bg-[#0a3a3a] border border-white/10 rounded-xl shadow-lg py-1.5 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-sm text-red-300 hover:bg-red-500/10 transition-colors"
-                  >
-                    <LogOut size={16} strokeWidth={2} />
-                    Log Out
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
+            </span>
+            <ChevronRight
+              size={18}
+              strokeWidth={2.25}
+              color="#26a69a"
+              className="ml-auto shrink-0"
+            />
+          </button>
         )}
       </footer>
     </aside>

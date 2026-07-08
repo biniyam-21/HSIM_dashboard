@@ -611,7 +611,7 @@ export default function MainGrid() {
                     type="button"
                     className="flex flex-col items-center justify-center gap-[7px] py-3.5 px-1.5 bg-white border border-[#EEF2F6] rounded-[10px] cursor-pointer"
                   >
-                    <Icon size={22} strokeWidth={1.9} color="#0F766E" />
+                    <Icon size={22} strokeWidth={2.6} color="#0F766E" />
                     <span className="text-xs text-[#334155] text-center leading-[1.2]">
                       {s.label}
                     </span>
@@ -636,8 +636,8 @@ export default function MainGrid() {
                 ))}
               </div>
               <div className="flex flex-col items-center text-center gap-1.5 w-[130px] mx-auto sm:mx-0 shrink-0">
-                <span className="w-[62px] h-[62px] rounded-full bg-[#0F766E] flex items-center justify-center mb-0.5">
-                  <ShieldCheck size={30} strokeWidth={2.2} color="#fff" />
+                <span className="w-[110px] h-[110px] rounded-full bg-[#0F766E] flex items-center justify-center mb-0.5">
+                  <ShieldCheck size={68} strokeWidth={2.8} color="#fff" />
                 </span>
                 <span className="text-[13px] font-bold text-[#0F172A]">
                   System is Secure

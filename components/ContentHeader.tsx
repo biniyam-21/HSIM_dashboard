@@ -30,7 +30,7 @@ const KPIS: Kpi[] = [
   {
     title: "OPD Patients",
     value: "276",
-    valueClass: "text-[28px]",
+    valueClass: "text-[22px]",
     icon: Users,
     iconBgClass: "bg-[#216E6A]",
     label: "Today",
@@ -40,7 +40,7 @@ const KPIS: Kpi[] = [
   {
     title: "IPD Patients",
     value: "158",
-    valueClass: "text-[28px]",
+    valueClass: "text-[22px]",
     icon: BedSingle,
     iconBgClass: "bg-[#5C8E64]",
     label: "Today",
@@ -50,7 +50,7 @@ const KPIS: Kpi[] = [
   {
     title: "ER Cases",
     value: "48",
-    valueClass: "text-[28px]",
+    valueClass: "text-[22px]",
     icon: Activity,
     iconBgClass: "bg-[#DB5567]",
     label: "Today",
@@ -60,7 +60,7 @@ const KPIS: Kpi[] = [
   {
     title: "Lab Tests",
     value: "342",
-    valueClass: "text-[28px]",
+    valueClass: "text-[22px]",
     icon: FlaskConical,
     iconBgClass: "bg-[#F8A05F]",
     label: "Today",
@@ -70,7 +70,7 @@ const KPIS: Kpi[] = [
   {
     title: "Revenue (Today)",
     value: "Birr 285,430",
-    valueClass: "text-[24px]",
+    valueClass: "text-[18px]",
     icon: DollarSign,
     iconBgClass: "bg-[#627EC1]",
     label: "Today",
@@ -80,7 +80,7 @@ const KPIS: Kpi[] = [
   {
     title: "Available Beds",
     value: "76",
-    valueClass: "text-[28px]",
+    valueClass: "text-[22px]",
     icon: Bed,
     iconBgClass: "bg-[#216E6A]",
     label: "Total: 234",
@@ -149,7 +149,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
   const isUp = kpi.trend === "up";
   const isGauge = kpi.gauge !== undefined;
   return (
-    <div className="flex items-center gap-4 p-4 bg-white border border-[#F1F5F9] rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] min-w-0 box-border">
+    <div className="flex items-center gap-4 py-4 px-4 bg-white border border-[#F1F5F9] rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] min-w-0 box-border">
       <span
         className={`flex items-center justify-center w-14 h-14 rounded-2xl shrink-0 ${kpi.iconBgClass}`}
       >
@@ -157,7 +157,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
       </span>
 
       <div className="flex flex-col min-w-0 flex-1">
-        <div className="text-sm font-semibold text-[#475569] mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
+        <div className="text-sm font-semibold text-[#475569] mb-1 leading-snug">
           {kpi.title}
         </div>
         <div
@@ -246,7 +246,7 @@ export default function ContentHeader() {
       </div>
 
       {/* Section 2: KPI grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5 mt-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-6">
         {KPIS.map((kpi) => (
           <KpiCard key={kpi.title} kpi={kpi} />
         ))}
