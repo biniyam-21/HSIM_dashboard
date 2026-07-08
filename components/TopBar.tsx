@@ -94,7 +94,7 @@ export default function TopBar({
   };
 
   return (
-    <header className="flex items-center gap-3 md:gap-4 w-full h-[68px] px-3 md:px-5 bg-white border-b border-[#eceff1] font-sans box-border">
+    <header className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full h-[68px] px-2.5 sm:px-3 md:px-5 bg-white border-b border-[#eceff1] font-sans box-border">
       {/* Far left: hamburger */}
       <button
         type="button"
@@ -106,7 +106,7 @@ export default function TopBar({
       </button>
 
       {/* Search field */}
-      <div className="flex items-center gap-2.5 flex-[2] min-w-[240px] h-[42px] px-3 bg-white border border-[#d7dde1] rounded-[10px]">
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0 sm:min-w-[160px] md:min-w-[240px] md:flex-[2] h-[42px] px-2.5 sm:px-3 bg-white border border-[#d7dde1] rounded-[10px]">
         <Search size={18} strokeWidth={2} color="#9ca3af" className="shrink-0" />
         <input
           type="text"
@@ -118,20 +118,20 @@ export default function TopBar({
         </span>
       </div>
 
-      {/* Quick Actions button */}
+      {/* Quick Actions button — omitted on mobile, appears from md breakpoint up */}
       <button
         type="button"
-        className="flex items-center gap-2 h-[42px] px-3 md:px-4 bg-[#159a8c] rounded-[10px] cursor-pointer shrink-0"
+        className="hidden md:flex items-center gap-2 h-[42px] px-3 md:px-4 bg-[#159a8c] rounded-[10px] cursor-pointer shrink-0"
       >
         <Plus size={18} strokeWidth={2.5} color="#ffffff" />
-        <span className="hidden md:inline text-sm font-semibold text-white whitespace-nowrap">
+        <span className="text-sm font-semibold text-white whitespace-nowrap">
           Quick Actions
         </span>
         <ChevronDown size={16} strokeWidth={2.5} color="#ffffff" />
       </button>
 
       {/* Spacer — pushes icon strip + profile to the far right */}
-      <div className="flex-1" />
+      <div className="hidden sm:block flex-1" />
 
       {/* Icon strip — sits directly left of the profile trigger */}
       <div className="flex items-center gap-1 shrink-0">
@@ -153,24 +153,24 @@ export default function TopBar({
         </button>
         <button
           type="button"
-          className="hidden sm:flex relative items-center justify-center w-9 h-9 rounded-lg cursor-pointer hover:bg-[#f3f5f7]"
+          className="hidden md:flex relative items-center justify-center w-9 h-9 rounded-lg cursor-pointer hover:bg-[#f3f5f7]"
           aria-label="Calendar"
         >
           <Calendar size={19} strokeWidth={2.25} color="#374151" />
         </button>
         <button
           type="button"
-          className="hidden sm:flex relative items-center justify-center w-9 h-9 rounded-lg cursor-pointer hover:bg-[#f3f5f7]"
+          className="hidden md:flex relative items-center justify-center w-9 h-9 rounded-lg cursor-pointer hover:bg-[#f3f5f7]"
           aria-label="Settings"
         >
           <Settings size={19} strokeWidth={2.25} color="#374151" />
         </button>
         {/* Thin divider between icons and profile */}
-        <div className="hidden lg:block w-px h-6 bg-[#e2e8f0] mx-1.5" />
+        <div className="hidden sm:block w-px h-6 bg-[#e2e8f0] mx-1 sm:mx-1.5" />
       </div>
 
-      {/* User profile menu */}
-      <div className="relative hidden lg:block shrink-0">
+      {/* User profile menu — always visible; name/role text collapses on narrow screens */}
+      <div className="relative shrink-0">
         {profileOpen && (
           <div
             className="fixed inset-0 z-30"
@@ -184,7 +184,8 @@ export default function TopBar({
           type="button"
           onClick={() => setProfileOpen((v) => !v)}
           aria-expanded={profileOpen}
-          className={`flex items-center gap-2.5 h-11 pl-3 pr-2.5 rounded-r-sm cursor-pointer transition-all duration-200 border-l-2 ${
+          aria-label="Open profile menu"
+          className={`flex items-center gap-1.5 sm:gap-2.5 h-11 pl-1.5 pr-1 sm:pl-3 sm:pr-2.5 rounded-r-sm cursor-pointer transition-all duration-200 border-l-2 ${
             profileOpen
               ? "border-l-[#159a8c] bg-[#f3f5f7]"
               : "border-l-[#159a8c]/35 hover:border-l-[#159a8c] hover:bg-[#f3f5f7]"
@@ -199,7 +200,7 @@ export default function TopBar({
             />
             <span className="absolute bottom-0 right-0 w-[9px] h-[9px] rounded-full bg-emerald-500 ring-2 ring-white" />
           </div>
-          <span className="flex flex-col leading-[1.2] text-left min-w-0">
+          <span className="hidden sm:flex flex-col leading-[1.2] text-left min-w-0">
             <span className="text-[13px] font-semibold text-[#1f2937] whitespace-nowrap">
               Dr. Eyob Tesfaye
             </span>
@@ -211,7 +212,7 @@ export default function TopBar({
             size={14}
             strokeWidth={2.5}
             color="#94a3b8"
-            className={`shrink-0 transition-transform duration-200 ${
+            className={`hidden sm:block shrink-0 transition-transform duration-200 ${
               profileOpen ? "rotate-180" : ""
             }`}
           />
@@ -219,7 +220,7 @@ export default function TopBar({
 
         {/* ── Dropdown ────────────────────────────────────────────── */}
         {profileOpen && (
-          <div className="absolute z-40 top-full right-0 mt-2 w-[272px] bg-white border border-[#e2e8f0] rounded-xl shadow-xl shadow-black/[0.07] py-1.5 overflow-hidden">
+          <div className="absolute z-40 top-full right-0 mt-2 w-[272px] max-w-[calc(100vw-24px)] bg-white border border-[#e2e8f0] rounded-xl shadow-xl shadow-black/[0.07] py-1.5 overflow-hidden">
 
             {/* Identity header */}
             <div className="flex items-start gap-3 px-3 pt-2.5 pb-3">

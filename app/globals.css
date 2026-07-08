@@ -24,6 +24,30 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Dashboard load-in: cards/rows rise + fade on mount, staggered via inline animation-delay. */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-rise {
+  animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* Sidebar scrollbar — dark track, light thumb so the moving bar stands out */
 .sidebar-scroll {
   scrollbar-width: thin;

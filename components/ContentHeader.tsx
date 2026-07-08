@@ -11,6 +11,8 @@ import {
   ArrowDown,
   type LucideIcon,
 } from "lucide-react";
+import CountUp from "@/components/CountUp";
+import AnimatedGauge from "@/components/AnimatedGauge";
 
 type Trend = "up" | "down";
 
@@ -104,52 +106,15 @@ function HospitalLogo() {
   );
 }
 
-/** 40px circular progress gauge — grey track, dark teal fill, centered %. */
-function Gauge({ percent }: { percent: number }) {
-  const size = 40;
-  const stroke = 4;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const offset = c * (1 - percent / 100);
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        className="fill-none stroke-[#E2E8F0]"
-        strokeWidth={stroke}
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        className="fill-none stroke-[#216E6A]"
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={offset}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-      <text
-        x="50%"
-        y="50%"
-        dominantBaseline="central"
-        textAnchor="middle"
-        className="font-heading text-[11px] font-semibold fill-[#0F172A]"
-      >
-        {percent}%
-      </text>
-    </svg>
-  );
-}
-
-function KpiCard({ kpi }: { kpi: Kpi }) {
+function KpiCard({ kpi, index }: { kpi: Kpi; index: number }) {
   const Icon = kpi.icon;
   const isUp = kpi.trend === "up";
   const isGauge = kpi.gauge !== undefined;
   return (
-    <div className="flex items-center gap-4 py-4 px-4 bg-white border border-[#F1F5F9] rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] min-w-0 box-border">
+    <div
+      className="animate-rise flex items-center gap-4 py-4 px-4 bg-white border border-[#F1F5F9] rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] min-w-0 box-border"
+      style={{ animationDelay: `${index * 70}ms` }}
+    >
       <span
         className={`flex items-center justify-center w-14 h-14 rounded-2xl shrink-0 ${kpi.iconBgClass}`}
       >
@@ -163,7 +128,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
         <div
           className={`font-heading font-semibold text-[#0F172A] mb-2 leading-[1.1] whitespace-nowrap ${kpi.valueClass}`}
         >
-          {kpi.value}
+          <CountUp value={kpi.value} delayMs={index * 70} />
         </div>
         <div className="flex items-center gap-2">
           <span
@@ -192,7 +157,7 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
 
       {isGauge && (
         <div className="ml-auto shrink-0 flex items-center">
-          <Gauge percent={kpi.gauge!} />
+          <AnimatedGauge percent={kpi.gauge!} delayMs={index * 70} />
         </div>
       )}
     </div>
@@ -247,8 +212,8 @@ export default function ContentHeader() {
 
       {/* Section 2: KPI grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-6">
-        {KPIS.map((kpi) => (
-          <KpiCard key={kpi.title} kpi={kpi} />
+        {KPIS.map((kpi, index) => (
+          <KpiCard key={kpi.title} kpi={kpi} index={index} />
         ))}
       </div>
     </div>

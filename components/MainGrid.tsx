@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import CountUp from "@/components/CountUp";
 import {
   Settings,
   Sparkles,
@@ -19,6 +20,16 @@ import {
 } from "lucide-react";
 
 /* ---------- shared building blocks ---------- */
+
+/** Flips to true shortly after mount so charts can transition from a "drawn" state to their real values. */
+function useMounted(delayMs = 40) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setMounted(true), delayMs);
+    return () => window.clearTimeout(id);
+  }, [delayMs]);
+  return mounted;
+}
 
 function Card({
   children,
@@ -49,17 +60,22 @@ function CardHeader({ title, link }: { title: string; link?: string }) {
   );
 }
 
-/** widthClass / colorClass must be literal Tailwind class strings (e.g. "w-[78%]", "bg-[#0F766E]"). */
+/** widthClass / colorClass must be literal Tailwind class strings (e.g. "w-[78%]", "bg-[#0F766E]"). Grows in from 0 on mount. */
 function ProgressBar({
   widthClass,
   colorClass = "bg-[#0F766E]",
+  delayMs = 0,
 }: {
   widthClass: string;
   colorClass?: string;
+  delayMs?: number;
 }) {
+  const mounted = useMounted(delayMs);
   return (
     <div className="flex-1 h-2 bg-[#EEF2F6] rounded overflow-hidden">
-      <div className={`h-full rounded ${widthClass} ${colorClass}`} />
+      <div
+        className={`h-full rounded transition-[width] duration-700 ease-out ${mounted ? widthClass : "w-0"} ${colorClass}`}
+      />
     </div>
   );
 }
@@ -108,6 +124,7 @@ const LINE_SERIES = [
 ];
 
 function LineChart() {
+  const mounted = useMounted();
   const W = 420;
   const H = 240;
   const padL = 30;
@@ -154,16 +171,20 @@ function LineChart() {
           {d}
         </text>
       ))}
-      {LINE_SERIES.map((s) => {
+      {LINE_SERIES.map((s, si) => {
         const pts = s.data.map((v, i) => ({ x: xAt(i), y: yAt(v) }));
         return (
           <g key={s.key}>
             <path
               d={smoothPath(pts)}
               fill="none"
-              className={s.lineClass}
+              className={`${s.lineClass} transition-[stroke-dashoffset] ease-out`}
               strokeWidth={2.5}
               strokeLinecap="round"
+              pathLength={100}
+              strokeDasharray={100}
+              strokeDashoffset={mounted ? 0 : 100}
+              style={{ transitionDuration: "1100ms", transitionDelay: `${si * 150}ms` }}
             />
             {pts.map((p, i) => (
               <circle
@@ -171,8 +192,13 @@ function LineChart() {
                 cx={p.x}
                 cy={p.y}
                 r={3.2}
-                className={`fill-white ${s.lineClass}`}
+                className={`fill-white ${s.lineClass} transition-opacity`}
                 strokeWidth={2}
+                style={{
+                  opacity: mounted ? 1 : 0,
+                  transitionDuration: "400ms",
+                  transitionDelay: `${si * 150 + (i / pts.length) * 900}ms`,
+                }}
               />
             ))}
           </g>
@@ -195,6 +221,7 @@ const BARS = [
 
 function BarChart() {
   const [hovered, setHovered] = useState<number | null>(null);
+  const mounted = useMounted();
 
   const W = 420;
   const H = 240;
@@ -259,13 +286,14 @@ function BarChart() {
           />
           <rect
             x={xAt(i)}
-            y={yAt(b.v)}
+            y={mounted ? yAt(b.v) : padT + plotH}
             width={bw}
-            height={padT + plotH - yAt(b.v)}
+            height={mounted ? padT + plotH - yAt(b.v) : 0}
             rx={4}
-            className={`fill-[#0F766E] pointer-events-none transition-opacity ${
+            className={`fill-[#0F766E] pointer-events-none transition-[height,y,opacity] ease-out ${
               hovered === i ? "opacity-100" : "opacity-90"
             }`}
+            style={{ transitionDuration: "600ms", transitionDelay: `${i * 45}ms` }}
           />
           <text
             x={xAt(i) + bw / 2}
@@ -317,6 +345,7 @@ const DONUT = [
 
 /** Thick donut: wide stroke relative to radius so it reads as a bold ring, not a thin hairline. */
 function Donut() {
+  const mounted = useMounted();
   const size = 170;
   const c = size / 2;
   const r = 60;
@@ -331,8 +360,8 @@ function Donut() {
       aria-hidden
     >
       <g transform={`rotate(-90 ${c} ${c})`}>
-        {DONUT.map((s) => {
-          const len = (circ * s.pct) / 100;
+        {DONUT.map((s, i) => {
+          const len = mounted ? (circ * s.pct) / 100 : 0;
           const el = (
             <circle
               key={s.name}
@@ -340,13 +369,14 @@ function Donut() {
               cy={c}
               r={r}
               fill="none"
-              className={s.ringClass}
+              className={`${s.ringClass} transition-[stroke-dasharray] ease-out`}
               strokeWidth={sw}
               strokeDasharray={`${len} ${circ - len}`}
               strokeDashoffset={-acc}
+              style={{ transitionDuration: "700ms", transitionDelay: `${i * 110}ms` }}
             />
           );
-          acc += len;
+          acc += (circ * s.pct) / 100;
           return el;
         })}
       </g>
@@ -475,8 +505,8 @@ export default function MainGrid() {
                     </tr>
                   </thead>
                   <tbody>
-                    {APPOINTMENTS.map((r) => (
-                      <tr key={r[0]}>
+                    {APPOINTMENTS.map((r, i) => (
+                      <tr key={r[0]} className="animate-rise" style={{ animationDelay: `${i * 60}ms` }}>
                         <td className={`${TD} font-semibold text-[#0F172A]`}>{r[0]}</td>
                         <td className={`${TD} font-normal text-[#475569]`}>{r[1]}</td>
                         <td className={`${TD} font-normal text-[#475569]`}>{r[2]}</td>
@@ -512,15 +542,21 @@ export default function MainGrid() {
                   <Donut />
                 </div>
                 <div className="flex flex-col justify-center gap-2.5 min-w-0 flex-1">
-                  {DONUT.map((s) => (
-                    <div key={s.name} className="flex items-center gap-2 min-w-0">
+                  {DONUT.map((s, i) => (
+                    <div
+                      key={s.name}
+                      className="animate-rise flex items-center gap-2 min-w-0"
+                      style={{ animationDelay: `${i * 70}ms` }}
+                    >
                       <span className={`w-[11px] h-[11px] rounded-[3px] shrink-0 ${s.swatchClass}`} />
                       <span className="text-[13px] text-[#475569] flex-1 min-w-0 truncate">
                         {s.name}
                       </span>
-                      <span className="text-[13px] font-bold text-[#0F172A] shrink-0">
-                        {s.pct}%
-                      </span>
+                      <CountUp
+                        value={`${s.pct}%`}
+                        delayMs={i * 70}
+                        className="text-[13px] font-bold text-[#0F172A] shrink-0"
+                      />
                     </div>
                   ))}
                 </div>
@@ -530,15 +566,17 @@ export default function MainGrid() {
             <Card className="flex flex-col">
               <CardHeader title="Bed Occupancy Overview" link="View All" />
               <div className="flex flex-col gap-[14px] flex-1 justify-between">
-                {BEDS.map((b) => (
+                {BEDS.map((b, i) => (
                   <div key={b.label} className="flex items-center gap-3">
                     <span className="text-[13px] text-[#475569] w-[108px] shrink-0">
                       {b.label}
                     </span>
-                    <ProgressBar widthClass={b.barClass} />
-                    <span className="text-[13px] font-semibold text-[#0F172A] w-[34px] text-right shrink-0">
-                      {b.pct}%
-                    </span>
+                    <ProgressBar widthClass={b.barClass} delayMs={i * 80} />
+                    <CountUp
+                      value={`${b.pct}%`}
+                      delayMs={i * 80}
+                      className="text-[13px] font-semibold text-[#0F172A] w-[34px] text-right shrink-0"
+                    />
                     <span className="text-xs text-[#94A3B8] w-[42px] text-right shrink-0">
                       {b.frac}
                     </span>
@@ -547,9 +585,11 @@ export default function MainGrid() {
                 <div className="flex items-center gap-3 pt-3 mt-0.5 border-t border-[#F1F5F9]">
                   <span className="text-[13px] font-bold text-[#0F172A] flex-1">Total</span>
                   <span className="text-[13px] font-bold text-[#0F172A]">133 / 183</span>
-                  <span className="text-[13px] font-bold text-[#16A34A] w-[42px] text-right">
-                    73%
-                  </span>
+                  <CountUp
+                    value="73%"
+                    delayMs={BEDS.length * 80}
+                    className="text-[13px] font-bold text-[#16A34A] w-[42px] text-right"
+                  />
                 </div>
               </div>
             </Card>
@@ -557,15 +597,17 @@ export default function MainGrid() {
             <Card className="flex flex-col">
               <CardHeader title="Top Services (This Month)" link="View Report" />
               <div className="flex flex-col gap-[14px] flex-1 justify-between">
-                {SERVICES.map((s) => (
+                {SERVICES.map((s, i) => (
                   <div key={s.label} className="flex items-center gap-3">
                     <span className="text-[13px] text-[#475569] w-[100px] shrink-0">
                       {s.label}
                     </span>
-                    <ProgressBar widthClass={s.barClass} />
-                    <span className="text-[13px] font-semibold text-[#0F172A] w-[34px] text-right shrink-0">
-                      {s.pct}%
-                    </span>
+                    <ProgressBar widthClass={s.barClass} delayMs={i * 80} />
+                    <CountUp
+                      value={`${s.pct}%`}
+                      delayMs={i * 80}
+                      className="text-[13px] font-semibold text-[#0F172A] w-[34px] text-right shrink-0"
+                    />
                   </div>
                 ))}
               </div>
@@ -578,10 +620,10 @@ export default function MainGrid() {
           <Card className="flex-1 lg:!pb-[60px]">
             <CardHeader title="System Announcements" link="View All" />
             <div className="flex flex-col gap-4">
-              {ANNOUNCEMENTS.map((a) => {
+              {ANNOUNCEMENTS.map((a, i) => {
                 const Icon = a.icon;
                 return (
-                  <div key={a.title} className="flex gap-3">
+                  <div key={a.title} className="animate-rise flex gap-3" style={{ animationDelay: `${i * 90}ms` }}>
                     <span className="w-[34px] h-[34px] rounded-full bg-[#DCFCE7] border border-[#86EFAC] flex items-center justify-center shrink-0">
                       <Icon size={16} strokeWidth={2} color="#166534" />
                     </span>
@@ -603,13 +645,14 @@ export default function MainGrid() {
           <Card className="flex-1 lg:!pb-10">
             <CardHeader title="Quick Shortcuts" />
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {SHORTCUTS.map((s) => {
+              {SHORTCUTS.map((s, i) => {
                 const Icon = s.icon;
                 return (
                   <button
                     key={s.label}
                     type="button"
-                    className="flex flex-col items-center justify-center gap-[7px] py-3.5 px-1.5 bg-white border border-[#EEF2F6] rounded-[10px] cursor-pointer"
+                    className="animate-rise flex flex-col items-center justify-center gap-[7px] py-3.5 px-1.5 bg-white border border-[#EEF2F6] rounded-[10px] cursor-pointer transition-transform hover:-translate-y-0.5"
+                    style={{ animationDelay: `${i * 45}ms` }}
                   >
                     <Icon size={22} strokeWidth={2.6} color="#0F766E" />
                     <span className="text-xs text-[#334155] text-center leading-[1.2]">
@@ -625,8 +668,8 @@ export default function MainGrid() {
             <CardHeader title="System Status" />
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex flex-col gap-3 flex-1 min-w-0 w-full">
-                {SYS_STATUS.map((s) => (
-                  <div key={s.label} className="flex items-center gap-2">
+                {SYS_STATUS.map((s, i) => (
+                  <div key={s.label} className="animate-rise flex items-center gap-2" style={{ animationDelay: `${i * 90}ms` }}>
                     <Check size={15} strokeWidth={3} color="#166534" />
                     <span className="text-[13px] text-[#475569] flex-1">{s.label}</span>
                     <span className="text-xs font-semibold text-[#16A34A] whitespace-nowrap">
