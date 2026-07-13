@@ -1,5 +1,7 @@
 "use client";
 
+// Laboratory / LIS module component for pathology workflow and specimen case handling.
+
 import { useMemo, useState } from "react";
 import {
   Search,

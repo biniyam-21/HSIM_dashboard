@@ -1,5 +1,7 @@
 "use client";
 
+// Laboratory / LIS module component for quality control review and analyzer checks.
+
 import { useMemo, useState } from "react";
 import {
   Search,

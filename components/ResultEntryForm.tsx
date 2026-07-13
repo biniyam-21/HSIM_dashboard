@@ -1,5 +1,7 @@
 "use client";
 
+// Laboratory / LIS module component for entering and reviewing test results.
+
 import { useMemo, useRef, useState } from "react";
 import {
   Search,

@@ -1,5 +1,7 @@
 "use client";
 
+// Laboratory / LIS module component for managing lab test orders and specimen workflow.
+
 import { Fragment, useMemo, useState } from "react";
 import {
   Search,

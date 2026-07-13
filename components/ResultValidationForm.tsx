@@ -1,5 +1,7 @@
 "use client";
 
+// Laboratory / LIS module component for validating and approving laboratory results.
+
 import { Fragment, useMemo, useState } from "react";
 import {
   Search,
