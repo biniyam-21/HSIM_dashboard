@@ -6,6 +6,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
+  Filter,
+  FilterX,
   Info,
   Search,
   Download,
@@ -28,7 +30,7 @@ import {
   inputClass,
   Avatar,
 } from "@/components/FormFields";
-import { FilterPopoverButton, FilterChips, useSessionFilters, type FilterChip } from "@/components/TableFilters";
+import { useSessionFilters, type FilterChip } from "@/components/TableFilters";
 
 /* ---------- mock data ---------- */
 
@@ -506,6 +508,11 @@ function buildChips(c: Criteria): FilterChip[] {
   return chips;
 }
 
+/** Highlighted outline applied directly to a filter field once it holds a non-default value. */
+function activeFieldClass(active: boolean): string {
+  return active ? "!border-teal-700 ring-1 ring-teal-700 bg-teal-50/50" : "";
+}
+
 function SearchToolbar({
   criteria,
   clearKey,
@@ -519,6 +526,7 @@ function SearchToolbar({
   onRemoveChip: (key: string) => void;
   onClearAdvanced: () => void;
 }) {
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const activeCount = buildChips(criteria).length;
   const quickField: Record<string, keyof Criteria> = {
     Name: "nameQuery",
@@ -541,7 +549,7 @@ function SearchToolbar({
 
   return (
     <Card>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative sm:w-48 shrink-0">
             <select
@@ -565,9 +573,76 @@ function SearchToolbar({
             />
             <Search size={16} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
-          <FilterPopoverButton activeCount={activeCount}>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+            aria-controls="patient-search-filters-panel"
+            className={`flex items-center justify-center gap-2 h-[42px] px-4 rounded-lg border text-sm font-medium shrink-0 transition-colors ${
+              filtersOpen || activeCount > 0
+                ? "border-teal-700 bg-teal-50 text-teal-800"
+                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <Filter size={16} strokeWidth={2} />
+            <span>Filters</span>
+            {activeCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-teal-700 text-white text-[10px] font-semibold leading-none">
+                {activeCount}
+              </span>
+            )}
+            <ChevronDown
+              size={15}
+              strokeWidth={2}
+              className={`transition-transform duration-200 ${filtersOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+        </div>
+
+        <div
+          className={`grid transition-[grid-template-rows] duration-300 ease-in-out motion-reduce:transition-none ${
+            filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div
+              id="patient-search-filters-panel"
+              aria-hidden={!filtersOpen}
+              className="flex flex-wrap items-end gap-3 pt-3 border-t border-gray-100"
+            >
+              <div className="flex flex-col gap-1 w-36">
+                <FieldLabel>Gender</FieldLabel>
+                <select
+                  value={criteria.gender}
+                  onChange={(e) => onChange("gender", e.target.value)}
+                  className={`${inputClass} appearance-none bg-white ${activeFieldClass(criteria.gender !== "All")}`}
+                >
+                  {["All", "Female", "Male"].map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1 w-32">
+                <FieldLabel>Blood Group</FieldLabel>
+                <select
+                  value={criteria.bloodGroup}
+                  onChange={(e) => onChange("bloodGroup", e.target.value)}
+                  className={`${inputClass} appearance-none bg-white ${activeFieldClass(criteria.bloodGroup !== "All")}`}
+                >
+                  {["All", "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"].map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1 w-44">
+                <FieldLabel>Department</FieldLabel>
+                <select
+                  value={criteria.department}
+                  onChange={(e) => onChange("department", e.target.value)}
+                  className={`${inputClass} appearance-none bg-white ${activeFieldClass(criteria.department !== "All Departments")}`}
+                >
+                  {["All Departments", "General Medicine", "Pediatrics", "Surgery", "Hematology", "Pharmacy"].map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1 w-36">
                 <FieldLabel>Date of Birth</FieldLabel>
                 <div className="relative">
                   <input
@@ -575,71 +650,33 @@ function SearchToolbar({
                     placeholder="DD/MM/YYYY"
                     value={criteria.dobQuery}
                     onChange={(e) => onChange("dobQuery", e.target.value)}
-                    className={`${inputClass} pr-9`}
+                    className={`${inputClass} pr-9 ${activeFieldClass(criteria.dobQuery !== "")}`}
                   />
                   <CalendarIcon size={16} strokeWidth={1.8} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <FieldLabel>Gender</FieldLabel>
-                  <select
-                    value={criteria.gender}
-                    onChange={(e) => onChange("gender", e.target.value)}
-                    className={`${inputClass} appearance-none bg-white`}
-                  >
-                    {["All", "Female", "Male"].map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <FieldLabel>Blood Group</FieldLabel>
-                  <select
-                    value={criteria.bloodGroup}
-                    onChange={(e) => onChange("bloodGroup", e.target.value)}
-                    className={`${inputClass} appearance-none bg-white`}
-                  >
-                    {["All", "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"].map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <FieldLabel>Department</FieldLabel>
-                <select
-                  value={criteria.department}
-                  onChange={(e) => onChange("department", e.target.value)}
-                  className={`${inputClass} appearance-none bg-white`}
-                >
-                  {["All Departments", "General Medicine", "Pediatrics", "Surgery", "Hematology", "Pharmacy"].map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
-              </div>
               <div className="flex flex-col gap-1">
                 <FieldLabel>Visit Date Range</FieldLabel>
                 <div className="flex items-center gap-1.5">
-                  <div className="flex-1 min-w-0">
-                    <DatePicker
-                      key={`visit-from-${clearKey}`}
-                      placeholder="From"
-                      className="w-full"
-                      onChange={(d) => onChange("visitDateFrom", toISO(d))}
-                    />
-                  </div>
+                  <DatePicker
+                    key={`visit-from-${clearKey}`}
+                    placeholder="From"
+                    className={`w-32 rounded-md ${activeFieldClass(criteria.visitDateFrom !== "")}`}
+                    onChange={(d) => onChange("visitDateFrom", toISO(d))}
+                  />
                   <span className="text-gray-400 text-xs shrink-0 select-none">—</span>
-                  <div className="flex-1 min-w-0">
-                    <DatePicker
-                      key={`visit-to-${clearKey}`}
-                      placeholder="To"
-                      className="w-full"
-                      onChange={(d) => onChange("visitDateTo", toISO(d))}
-                    />
-                  </div>
+                  <DatePicker
+                    key={`visit-to-${clearKey}`}
+                    placeholder="To"
+                    className={`w-32 rounded-md ${activeFieldClass(criteria.visitDateTo !== "")}`}
+                    onChange={(d) => onChange("visitDateTo", toISO(d))}
+                  />
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => onChange("showInactive", !criteria.showInactive)}
-                className="flex items-center gap-2.5"
+                className="flex items-center gap-2.5 pb-2.5"
               >
                 <span
                   className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
@@ -653,7 +690,7 @@ function SearchToolbar({
                   />
                 </span>
                 <span className="text-sm text-gray-700 flex items-center gap-1.5 whitespace-nowrap">
-                  Show inactive/merged patients
+                  Show inactive/merged
                   <Info size={13} strokeWidth={2} className="text-gray-400 shrink-0" />
                 </span>
               </button>
@@ -661,15 +698,18 @@ function SearchToolbar({
                 <button
                   type="button"
                   onClick={onClearAdvanced}
-                  className="self-start text-xs font-medium text-gray-500 hover:text-gray-700 hover:underline"
+                  aria-label="Clear all filters"
+                  className="group flex items-center gap-2 pb-2.5 pl-2.5 pr-2.5 hover:pr-3.5 rounded-full text-gray-500 hover:text-gray-700 shrink-0 transition-all duration-200"
                 >
-                  Clear advanced filters
+                  <FilterX size={17} strokeWidth={2.1} className="shrink-0 text-red-600" />
+                  <span className="max-w-0 group-hover:max-w-[110px] overflow-hidden whitespace-nowrap text-sm font-semibold transition-all duration-200">
+                    Clear filters
+                  </span>
                 </button>
               )}
             </div>
-          </FilterPopoverButton>
+          </div>
         </div>
-        <FilterChips chips={buildChips(criteria)} onRemove={onRemoveChip} onClearAll={onClearAdvanced} />
       </div>
     </Card>
   );

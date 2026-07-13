@@ -21,6 +21,8 @@ import {
   AlertTriangle,
   ShieldAlert,
   FileText,
+  Filter,
+  FilterX,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -28,7 +30,7 @@ import ModulePageHeader from "@/components/ModulePageHeader";
 import PatientProfileTabs from "@/components/PatientProfileTabs";
 import { FieldLabel, inputClass, Avatar } from "@/components/FormFields";
 import DatePicker from "@/components/DatePicker";
-import { FilterPopoverButton, FilterChips, useSessionFilters, type FilterChip } from "@/components/TableFilters";
+import { useSessionFilters, type FilterChip } from "@/components/TableFilters";
 
 /* ---------- types ---------- */
 
@@ -230,6 +232,11 @@ function KpiRow({ cards }: { cards: KpiCard[] }) {
 
 /* ---------- shared filter primitives ---------- */
 
+/** Highlighted outline applied directly to a filter field once it holds a non-default value. */
+function activeFieldClass(active: boolean): string {
+  return active ? "!border-teal-700 ring-1 ring-teal-700 bg-teal-50/50" : "";
+}
+
 function ControlledSelect({
   label,
   value,
@@ -241,6 +248,7 @@ function ControlledSelect({
   onChange: (v: string) => void;
   options: string[];
 }) {
+  const active = value !== options[0];
   return (
     <div className="flex flex-col gap-1">
       <FieldLabel>{label}</FieldLabel>
@@ -248,7 +256,7 @@ function ControlledSelect({
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`${inputClass} pr-8 appearance-none bg-white`}
+          className={`${inputClass} pr-8 appearance-none bg-white ${activeFieldClass(active)}`}
         >
           {options.map((o) => (
             <option key={o} value={o}>{o}</option>
@@ -267,11 +275,13 @@ function toISO(d: Date) {
 function DateRangePicker({
   label,
   clearKey,
+  active,
   onFromChange,
   onToChange,
 }: {
   label: string;
   clearKey: number;
+  active?: boolean;
   onFromChange: (iso: string) => void;
   onToChange: (iso: string) => void;
 }) {
@@ -283,7 +293,7 @@ function DateRangePicker({
           <DatePicker
             key={`from-${clearKey}`}
             placeholder="From"
-            className="w-full"
+            className={`w-full rounded-md ${activeFieldClass(!!active)}`}
             onChange={(d) => onFromChange(toISO(d))}
           />
         </div>
@@ -292,7 +302,7 @@ function DateRangePicker({
           <DatePicker
             key={`to-${clearKey}`}
             placeholder="To"
-            className="w-full"
+            className={`w-full rounded-md ${activeFieldClass(!!active)}`}
             onChange={(d) => onToChange(toISO(d))}
           />
         </div>
@@ -453,7 +463,6 @@ function FilterBar({
   filters,
   clearKey,
   onChange,
-  onRemoveChip,
   onClearAdvanced,
 }: {
   filters: DupFilters;
@@ -462,9 +471,10 @@ function FilterBar({
   onRemoveChip: (key: string) => void;
   onClearAdvanced: () => void;
 }) {
-  const chips = buildDupChips(filters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeCount = buildDupChips(filters).length;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col gap-3">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col gap-4">
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <input
@@ -476,8 +486,43 @@ function FilterBar({
           />
           <Search size={16} strokeWidth={1.8} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
         </div>
-        <FilterPopoverButton activeCount={chips.length}>
-          <div className="flex flex-col gap-4">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          aria-expanded={filtersOpen}
+          aria-controls="dup-review-filters-panel"
+          className={`flex items-center justify-center gap-2 h-[42px] px-4 rounded-lg border text-sm font-medium shrink-0 transition-colors ${
+            filtersOpen || activeCount > 0
+              ? "border-teal-700 bg-teal-50 text-teal-800"
+              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <Filter size={16} strokeWidth={2} />
+          <span>Filters</span>
+          {activeCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-teal-700 text-white text-[10px] font-semibold leading-none">
+              {activeCount}
+            </span>
+          )}
+          <ChevronDown
+            size={15}
+            strokeWidth={2}
+            className={`transition-transform duration-200 ${filtersOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
+
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-in-out motion-reduce:transition-none ${
+          filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div
+            id="dup-review-filters-panel"
+            aria-hidden={!filtersOpen}
+            className="flex flex-wrap items-end gap-3 pt-3 border-t border-gray-100"
+          >
             <ControlledSelect
               label="Match Confidence"
               value={filters.confidence}
@@ -505,22 +550,26 @@ function FilterBar({
             <DateRangePicker
               label="Detected Date"
               clearKey={clearKey}
+              active={!!(filters.dateFrom || filters.dateTo)}
               onFromChange={(v) => onChange({ dateFrom: v })}
               onToChange={(v) => onChange({ dateTo: v })}
             />
-            {chips.length > 0 && (
+            {activeCount > 0 && (
               <button
                 type="button"
                 onClick={onClearAdvanced}
-                className="self-start text-xs font-medium text-gray-500 hover:text-gray-700 hover:underline"
+                aria-label="Clear all filters"
+                className="group flex items-center gap-2 pb-2.5 pl-2.5 pr-2.5 hover:pr-3.5 rounded-full text-gray-500 hover:text-gray-700 shrink-0 transition-all duration-200"
               >
-                Clear advanced filters
+                <FilterX size={17} strokeWidth={2.1} className="shrink-0 text-red-600" />
+                <span className="max-w-0 group-hover:max-w-[110px] overflow-hidden whitespace-nowrap text-sm font-semibold transition-all duration-200">
+                  Clear filters
+                </span>
               </button>
             )}
           </div>
-        </FilterPopoverButton>
+        </div>
       </div>
-      <FilterChips chips={chips} onRemove={onRemoveChip} onClearAll={onClearAdvanced} />
     </div>
   );
 }
@@ -1073,7 +1122,6 @@ function MergeFilterBar({
   filters,
   clearKey,
   onChange,
-  onRemoveChip,
   onClearAdvanced,
 }: {
   filters: MergeFilters;
@@ -1082,9 +1130,10 @@ function MergeFilterBar({
   onRemoveChip: (key: string) => void;
   onClearAdvanced: () => void;
 }) {
-  const chips = buildMergeChips(filters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeCount = buildMergeChips(filters).length;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col gap-3">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col gap-4">
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <input
@@ -1096,8 +1145,43 @@ function MergeFilterBar({
           />
           <Search size={16} strokeWidth={1.8} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
         </div>
-        <FilterPopoverButton activeCount={chips.length}>
-          <div className="flex flex-col gap-4">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          aria-expanded={filtersOpen}
+          aria-controls="merge-history-filters-panel"
+          className={`flex items-center justify-center gap-2 h-[42px] px-4 rounded-lg border text-sm font-medium shrink-0 transition-colors ${
+            filtersOpen || activeCount > 0
+              ? "border-teal-700 bg-teal-50 text-teal-800"
+              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <Filter size={16} strokeWidth={2} />
+          <span>Filters</span>
+          {activeCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-teal-700 text-white text-[10px] font-semibold leading-none">
+              {activeCount}
+            </span>
+          )}
+          <ChevronDown
+            size={15}
+            strokeWidth={2}
+            className={`transition-transform duration-200 ${filtersOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
+
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-in-out motion-reduce:transition-none ${
+          filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div
+            id="merge-history-filters-panel"
+            aria-hidden={!filtersOpen}
+            className="flex flex-wrap items-end gap-3 pt-3 border-t border-gray-100"
+          >
             <ControlledSelect
               label="Status"
               value={filters.status}
@@ -1119,22 +1203,26 @@ function MergeFilterBar({
             <DateRangePicker
               label="Merge Date"
               clearKey={clearKey}
+              active={!!(filters.dateFrom || filters.dateTo)}
               onFromChange={(v) => onChange({ dateFrom: v })}
               onToChange={(v) => onChange({ dateTo: v })}
             />
-            {chips.length > 0 && (
+            {activeCount > 0 && (
               <button
                 type="button"
                 onClick={onClearAdvanced}
-                className="self-start text-xs font-medium text-gray-500 hover:text-gray-700 hover:underline"
+                aria-label="Clear all filters"
+                className="group flex items-center gap-2 pb-2.5 pl-2.5 pr-2.5 hover:pr-3.5 rounded-full text-gray-500 hover:text-gray-700 shrink-0 transition-all duration-200"
               >
-                Clear advanced filters
+                <FilterX size={17} strokeWidth={2.1} className="shrink-0 text-red-600" />
+                <span className="max-w-0 group-hover:max-w-[110px] overflow-hidden whitespace-nowrap text-sm font-semibold transition-all duration-200">
+                  Clear filters
+                </span>
               </button>
             )}
           </div>
-        </FilterPopoverButton>
+        </div>
       </div>
-      <FilterChips chips={chips} onRemove={onRemoveChip} onClearAll={onClearAdvanced} />
     </div>
   );
 }
