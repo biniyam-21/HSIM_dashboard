@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { NAV_GROUPS, slugify, type NavItem } from "@/lib/navigation";
 import BrandMark from "@/components/BrandMark";
-import { openCommandPalette } from "@/components/CommandPalette";
+//import { openCommandPalette } from "@/components/CommandPalette";
 
 function GroupHeader({ title }: { title: string }) {
   return (
