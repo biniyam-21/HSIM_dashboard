@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 /** Splits "Birr 285,430" into { prefix: "Birr ", num: 285430, suffix: "", grouped: true }. */
 function parseValue(raw: string) {
@@ -30,11 +30,9 @@ export default function CountUp({
 }) {
   const parsed = parseValue(value);
   const [display, setDisplay] = useState(value);
-  const animatedOnce = useRef(false);
 
   useEffect(() => {
-    if (!parsed || animatedOnce.current) return;
-    animatedOnce.current = true;
+    if (!parsed) return;
 
     const reduceMotion =
       typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import HealthPulseLoader from "@/components/HealthPulseLoader";
+import CommandPalette from "@/components/CommandPalette";
 
 export default function DashboardShell({
   children,
@@ -58,6 +59,8 @@ export default function DashboardShell({
           <HealthPulseLoader label="Signing you out" />
         </div>
       )}
+
+      <CommandPalette />
     </div>
   );
 }

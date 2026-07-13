@@ -184,8 +184,8 @@ export default function Sidebar({
 
       {/* Scrolling menu region */}
       <nav
-        className={`sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden pt-[30px] pb-3 flex flex-col ${
-          collapsed ? "px-2" : "px-5"
+        className={`sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-3 flex flex-col ${
+          collapsed ? "px-2 " : "px-5"
         }`}
       >
         {/* 2. Active Menu Item */}

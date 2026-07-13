@@ -16,6 +16,7 @@ import {
   Palette,
   type LucideIcon,
 } from "lucide-react";
+import { openCommandPalette } from "@/components/CommandPalette";
 
 /** Small red count badge used on the notification / email icons. */
 function CountBadge({ count }: { count: number }) {
@@ -105,18 +106,20 @@ export default function TopBar({
         <Menu size={22} strokeWidth={2} color="#1f2937" />
       </button>
 
-      {/* Search field */}
-      <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0 sm:min-w-[160px] md:min-w-[240px] md:flex-[2] h-[42px] px-2.5 sm:px-3 bg-white border border-[#d7dde1] rounded-[10px]">
+      {/* Search field — opens the global command palette rather than filtering inline */}
+      <button
+        type="button"
+        onClick={openCommandPalette}
+        className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0 sm:min-w-[160px] md:min-w-[240px] md:flex-[2] h-[42px] px-2.5 sm:px-3 bg-white border border-[#d7dde1] rounded-[10px] cursor-pointer hover:border-[#159a8c] transition-colors text-left"
+      >
         <Search size={18} strokeWidth={2} color="#9ca3af" className="shrink-0" />
-        <input
-          type="text"
-          placeholder="Search patient, module, report..."
-          className="flex-1 min-w-0 border-none outline-none bg-transparent text-sm text-[#374151]"
-        />
+        <span className="flex-1 min-w-0 text-sm text-[#9ca3af] truncate">
+          Search patient, module, report...
+        </span>
         <span className="hidden sm:inline-block text-[11px] font-medium text-[#8b95a1] bg-[#f3f5f7] border border-[#e2e7eb] rounded-md py-[3px] px-2 whitespace-nowrap shrink-0">
           Ctrl + K
         </span>
-      </div>
+      </button>
 
       {/* Quick Actions button — omitted on mobile, appears from md breakpoint up */}
       <button
