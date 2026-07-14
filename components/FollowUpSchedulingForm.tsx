@@ -36,6 +36,10 @@ import {
   ArrowRight,
   RefreshCw,
   CalendarClock,
+  Search,
+  CheckCircle2,
+  Brain,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -59,17 +63,89 @@ import {
 } from "@/components/OpdShared";
 import DatePicker from "@/components/DatePicker";
 
-function toISO(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /* ============================================================================
-   Follow-Up Scheduling — FRD 11.4 continuity (Follow-Up Appointment) + care-
-   plan/reminder scaffolding. Reached at the close of a consultation, after
-   Prescription and Investigation Orders.
+   Follow-Up Scheduling — Care-plan scheduling and appointment desk.
+   FRD 11.4 continuity (Follow-Up Appointment) + care-plan reminder scaffolding.
+   
+   Enhanced with Stage 0: Outpatient Appointment Booking Queue.
    ========================================================================== */
 
-/* ---------- calendar ---------- */
+type FollowUpPatient = {
+  id: string;
+  name: string;
+  nationalId: string;
+  bloodGroup: string;
+  photo?: string;
+  initials?: string;
+  mrn: string;
+  gender: "Female" | "Male";
+  age: number;
+  dob: string;
+  dobISO: string;
+  phone: string;
+  checkInTime: string;
+  department: string;
+  doctor: string;
+  visitType: "New Visit" | "Follow-Up" | "Referral";
+  priorityLevel: "Routine" | "Priority" | "Urgent" | "Emergency";
+  diagnosis: string;
+  secondaryDiagnosis: string;
+  allergies: string;
+  medications: string;
+  weight: string;
+  height: string;
+};
+
+const MOCK_SCHEDULING_QUEUE: FollowUpPatient[] = [
+  {
+    id: "1",
+    name: "Selamawit Abebe",
+    nationalId: "1001-2345-6789",
+    bloodGroup: "O+",
+    photo: PATIENT_PHOTO,
+    mrn: "FSH-2025-00012345",
+    gender: "Female",
+    age: 33,
+    dob: "12/04/1992",
+    dobISO: "1992-04-12",
+    phone: "0911 234 567",
+    checkInTime: "09:30 AM",
+    department: "General Medicine",
+    doctor: "Dr. Eyob Tesfaye",
+    visitType: "Follow-Up",
+    priorityLevel: "Urgent",
+    diagnosis: "Type 2 Diabetes Mellitus",
+    secondaryDiagnosis: "Essential Hypertension",
+    allergies: "Penicillin",
+    medications: "Amlodipine 5mg OD",
+    weight: "68",
+    height: "162"
+  },
+  {
+    id: "2",
+    name: "Abebe Kebede",
+    nationalId: "1001-9876-5432",
+    bloodGroup: "A+",
+    initials: "AK",
+    mrn: "MRN-2026-000122",
+    gender: "Male",
+    age: 45,
+    dob: "12/03/1980",
+    dobISO: "1980-03-12",
+    phone: "0911 876 543",
+    checkInTime: "09:12 AM",
+    department: "General Medicine",
+    doctor: "Dr. Dawit Bekele",
+    visitType: "New Visit",
+    priorityLevel: "Routine",
+    diagnosis: "Type 2 Diabetes Mellitus",
+    secondaryDiagnosis: "None",
+    allergies: "No known allergies",
+    medications: "Metformin 500mg BD",
+    weight: "74",
+    height: "172"
+  }
+];
 
 function buildMonthGrid(year: number, month: number) {
   const first = new Date(year, month, 1);
@@ -95,8 +171,6 @@ const SLOTS = [
   { time: "02:00 PM", status: "available" },
 ];
 
-/* ---------- domain data ---------- */
-
 const VISIT_TYPES = ["Routine", "Urgent", "Review Results", "Medication Review", "Chronic Care", "Post Procedure", "Post Surgery", "Telemedicine"];
 
 const PREP_ITEMS: { key: string; label: string; icon: LucideIcon; priority: "Required" | "Recommended" | "Optional" }[] = [
@@ -120,14 +194,266 @@ const REMINDER_CHANNELS = [
 
 const REMINDER_TIMINGS = ["1 Day Before", "3 Days Before", "1 Week Before", "Custom"];
 
-export default function FollowUpSchedulingForm() {
+function toISO(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function PatientAvatar({ photo, initials, size = "md" }: { photo?: string; initials?: string; size?: "sm" | "md" | "lg" }) {
+  const sz = size === "lg" ? "w-12 h-12 text-base" : size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-xs";
+  if (photo) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={photo} alt="" className={`${sz} rounded-full object-cover shrink-0`} />;
+  }
+  return (
+    <span className={`${sz} rounded-full bg-teal-100 text-teal-700 font-bold flex items-center justify-center shrink-0`}>
+      {initials ?? "?"}
+    </span>
+  );
+}
+
+/* ============================================================================
+   Stage 0 — Appointment Booking Queue selection desk
+   ========================================================================== */
+
+function SchedulingQueueStage({
+  patients,
+  onSelect,
+  schedulesCount,
+}: {
+  patients: FollowUpPatient[];
+  onSelect: (p: FollowUpPatient) => void;
+  schedulesCount: number;
+}) {
+  const [query, setQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("All Priorities");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
+
+  const filtered = useMemo(() => {
+    return patients.filter((p) => {
+      const matchesSearch =
+        p.name.toLowerCase().includes(query.toLowerCase()) ||
+        p.mrn.toLowerCase().includes(query.toLowerCase()) ||
+        p.phone.includes(query);
+      const matchesPriority =
+        priorityFilter === "All Priorities" || p.priorityLevel === priorityFilter;
+      return matchesSearch && matchesPriority;
+    });
+  }, [patients, query, priorityFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const stats = useMemo(() => {
+    const waiting = patients.length;
+    return {
+      waiting,
+      remindersSent: 42,
+      scheduledToday: schedulesCount,
+    };
+  }, [patients, schedulesCount]);
+
+  const priorityStyles: Record<FollowUpPatient["priorityLevel"], string> = {
+    Routine: "bg-slate-50 text-slate-700 border-slate-200",
+    Priority: "bg-blue-50 text-blue-700 border-blue-200",
+    Urgent: "bg-amber-50 text-amber-700 border-amber-200",
+    Emergency: "bg-red-50 text-red-700 border-red-200 font-bold",
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F7F9FA] flex flex-col">
+      <div className="flex-1 p-6 max-w-[1600px] w-full mx-auto flex flex-col gap-5">
+        
+        <p className="text-xs text-gray-400">
+          Home <span className="mx-1 text-gray-300">&gt;</span> OPD Management{" "}
+          <span className="mx-1 text-gray-300">&gt;</span>
+          <span className="text-slate-800 font-semibold">Follow-Up Scheduling</span>
+        </p>
+
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-[22px] font-bold text-slate-900 font-display">Outpatient Scheduling Desk</h1>
+            <p className="text-sm text-gray-400 mt-0.5">
+              Review discharge criteria and book follow-up outpatient visits.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { label: "Pending Scheduling", value: stats.waiting, color: "text-blue-600 bg-blue-50/70 border-blue-100", subtitle: "Awaiting booking" },
+            { label: "Reminders Dispatched", value: stats.remindersSent, color: "text-indigo-600 bg-indigo-50/70 border-indigo-100", subtitle: "Reminders sent today" },
+            { label: "Bookings Completed", value: stats.scheduledToday, color: "text-emerald-600 bg-emerald-50/70 border-emerald-100", subtitle: "Scheduled today" },
+          ].map(({ label, value, color, subtitle }) => (
+            <div key={label} className={`rounded-2xl p-4 ${color.split(" ")[1]} border ${color.split(" ")[2]} flex flex-col gap-1 shadow-sm`}>
+              <span className="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">{label}</span>
+              <span className={`text-2xl font-bold font-display tabular-nums ${color.split(" ")[0]}`}>{value}</span>
+              <span className="text-xs text-gray-400 font-medium">{subtitle}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
+          <div className="flex flex-col gap-4">
+            
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Search size={16} strokeWidth={2.25} className="text-gray-400" />
+                  <h2 className="text-sm font-bold text-slate-800">Search Scheduling Queue</h2>
+                </div>
+                <span className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-3 py-1 font-medium">
+                  {filtered.length} patient{filtered.length !== 1 ? "s" : ""} waiting
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
+                    placeholder="Search by name, MRN, phone..."
+                    className={`${inputBase} pl-9`}
+                  />
+                  <Search size={15} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+
+                <div className="relative sm:w-48 shrink-0">
+                  <select
+                    value={priorityFilter}
+                    onChange={(e) => { setPriorityFilter(e.target.value); setCurrentPage(1); }}
+                    className={`${inputBase} pr-8 appearance-none bg-white cursor-pointer`}
+                  >
+                    {["All Priorities", "Routine", "Priority", "Urgent", "Emergency"].map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={15} strokeWidth={2} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+              <div className="overflow-x-auto -mx-5 px-5">
+                <table className="w-full min-w-[800px] border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      {["Patient", "MRN", "Diagnosis", "Attending Doctor / Dept", "Priority", ""].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4 whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paged.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-14 text-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <span className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                              <Search size={22} strokeWidth={1.8} className="text-gray-400" />
+                            </span>
+                            <p className="text-sm text-gray-500 font-medium">No patients found in your scheduling queue.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      paged.map((p) => (
+                        <tr
+                          key={p.id}
+                          className="border-b border-gray-100 last:border-0 hover:bg-teal-50/40 transition-colors group"
+                        >
+                          <td className="py-3.5 pr-4">
+                            <div className="flex items-center gap-3">
+                              <PatientAvatar photo={p.photo} initials={p.initials} size="sm" />
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-semibold text-slate-800 whitespace-nowrap group-hover:text-teal-700 transition-colors font-display">
+                                  {p.name}
+                                </span>
+                                <span className="text-[11px] text-gray-400 whitespace-nowrap">{p.gender} · {p.age} Y · {p.dob}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 pr-4">
+                            <span className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded px-2 py-1 tabular-nums whitespace-nowrap">
+                              {p.mrn}
+                            </span>
+                          </td>
+                          <td className="py-3.5 pr-4 font-semibold text-slate-705 max-w-[200px] truncate">
+                            {p.diagnosis}
+                          </td>
+                          <td className="py-3.5 pr-4">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-slate-860">{p.doctor}</span>
+                              <span className="text-[11px] text-gray-460">{p.department}</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 pr-4">
+                            <span className={`inline-flex items-center text-xs font-bold border rounded-full px-2.5 py-0.5 ${priorityStyles[p.priorityLevel] || ""}`}>
+                              {p.priorityLevel}
+                            </span>
+                          </td>
+                          <td className="py-3.5 text-right font-display">
+                            <button
+                              type="button"
+                              onClick={() => onSelect(p)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#148375] hover:bg-[#116a5f] text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shadow-sm"
+                            >
+                              <Calendar size={13} strokeWidth={2.5} className="shrink-0" />
+                              Book Appointment
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Brain size={16} strokeWidth={2.25} className="text-teal-700" />
+                <h2 className="text-sm font-bold text-slate-800 font-display">Scheduling Info</h2>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Confirm doctor availability calendars before setting appointments. Patients should get printouts of pre-visit prep requirements.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================================
+   Stage 1 — Follow-Up Scheduling Form
+   ========================================================================== */
+
+function SchedulingIntake({
+  patient,
+  onClear,
+  onSubmit,
+}: {
+  patient: FollowUpPatient;
+  onClear: () => void;
+  onSubmit: (date: string, time: string) => void;
+}) {
   const [followUpRequired, setFollowUpRequired] = useState(true);
   const [followUpDate, setFollowUpDate] = useState("2025-06-16");
   const [preferredTime, setPreferredTime] = useState("09:00 AM");
-  const [department, setDepartment] = useState("General Medicine");
-  const [doctor, setDoctor] = useState("Dr. Eyob Tesfaye");
+  const [department, setDepartment] = useState(patient.department);
+  const [doctor, setDoctor] = useState(patient.doctor);
   const [visitType, setVisitType] = useState("Chronic Care");
-  const [reason, setReason] = useState("30-day diabetes and hypertension review — assess glycemic control and blood pressure trend, adjust medication as needed.");
+  const [reason, setReason] = useState(`Chronic care review - ${patient.diagnosis}. Reassess clinical goals and adjust medications.`);
 
   const [treatmentGoals, setTreatmentGoals] = useState("Achieve HbA1c below 7.5%; blood pressure consistently under 140/90 mmHg.");
   const [lifestyleRecs, setLifestyleRecs] = useState("Reduce salt intake, 30 minutes of walking 5 days/week, continue diabetic diet.");
@@ -172,7 +498,7 @@ export default function FollowUpSchedulingForm() {
   return (
     <div className="min-h-screen bg-[#F7F9FA] flex flex-col">
       <div className="flex-1 p-6 pb-24 max-w-[1920px] w-full mx-auto flex flex-col gap-4">
-        {/* Breadcrumb + title + right actions */}
+        
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div className="flex flex-col gap-1.5">
             <p className="text-xs text-gray-400 flex items-center gap-1.5">
@@ -180,29 +506,22 @@ export default function FollowUpSchedulingForm() {
               <span className="text-gray-300">&gt;</span>
               <span>OPD Management</span>
               <span className="text-gray-300">&gt;</span>
-              <Link href="/modules/opd-management/consultation" className="hover:text-teal-700 hover:underline">
-                Consultation
-              </Link>
-              <span className="text-gray-300">&gt;</span>
               <span className="text-slate-800 font-semibold">Follow-Up Scheduling</span>
             </p>
             <div>
-              <h1 className="text-[22px] font-bold text-slate-900">Follow-Up Scheduling</h1>
+              <h1 className="text-[22px] font-bold text-slate-900 font-display">Follow-Up Scheduling</h1>
               <p className="text-sm text-gray-400 mt-0.5">Schedule the patient&rsquo;s next visit and create a structured follow-up care plan.</p>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <span className="font-bold text-amber-600 bg-amber-50 rounded-full px-2.5 py-0.5">Unsaved changes</span>
-              <span>&middot; Last saved 2 min ago</span>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <Link
-              href="/modules/opd-management/consultation"
+            <button
+              type="button"
+              onClick={onClear}
               className="flex items-center gap-2 border border-gray-300 rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-50 transition-colors"
             >
               <ArrowLeft size={15} strokeWidth={2.25} />
-              Back to Consultation
-            </Link>
+              Back to Queue
+            </button>
             <button type="button" className="flex items-center gap-2 border border-gray-300 rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-50 transition-colors">
               <Users size={15} strokeWidth={2.25} />
               View Patient 360°
@@ -210,49 +529,39 @@ export default function FollowUpSchedulingForm() {
           </div>
         </div>
 
-        {/* Patient header card */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex gap-5">
           <div className="relative shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={PATIENT_PHOTO} alt="Selamawit Abebe" className="w-16 h-16 rounded-full object-cover ring-[3px] ring-white shadow-[0_0_0_1px_rgba(0,0,0,0.06)]" />
+            <img src={patient.photo || PATIENT_PHOTO} alt={patient.name} className="w-16 h-16 rounded-full object-cover ring-[3px] ring-white shadow-[0_0_0_1px_rgba(0,0,0,0.06)]" />
             <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-bold text-slate-900">Selamawit Abebe</h2>
-              <span className="text-base leading-none text-rose-400" aria-label="Female">
-                &#9792;
+              <h2 className="text-lg font-bold text-slate-900 font-display">{patient.name}</h2>
+              <span className="text-base leading-none text-rose-400" aria-label={patient.gender}>
+                {patient.gender === "Female" ? "♀" : "♂"}
               </span>
               <Chip tone="teal">OPD</Chip>
-              <Chip tone="slate">Follow-up</Chip>
-              <Chip tone="blue">Diabetes</Chip>
-              <Chip tone="amber">Hypertension</Chip>
+              <Chip tone="slate">{patient.visitType}</Chip>
               <Chip tone="emerald">CBHI Active</Chip>
-              <Chip tone="emerald">Stable</Chip>
             </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-6 gap-y-3 mt-3.5">
-              <HeaderFact label="MRN" value="FSH-2025-00012345" />
-              <HeaderFact label="Age / Gender" value="33 Y · Female" />
-              <HeaderFact label="Phone" value="0911 234 567" />
-              <HeaderFact label="Visit No." value="OPD-2025-000567" />
-              <HeaderFact label="Visit Type" value="Follow-up Visit" />
-              <HeaderFact label="Department" value="General Medicine" />
-              <HeaderFact label="Primary Doctor" value="Dr. Eyob Tesfaye" />
-              <HeaderFact label="Blood Group" value="O+" />
-              <HeaderFact label="Insurance" value="Woreda 07 CBHI" valueClass="text-emerald-600" />
-              <HeaderFact label="Primary Diagnosis" value="Type 2 Diabetes Mellitus" />
-              <HeaderFact label="Secondary Diagnosis" value="Essential Hypertension" />
-              <HeaderFact label="Status" value="Stable" valueClass="text-emerald-600" />
+              <HeaderFact label="MRN" value={patient.mrn} />
+              <HeaderFact label="Age / Gender" value={`${patient.age} Y · ${patient.gender}`} />
+              <HeaderFact label="Phone" value={patient.phone} />
+              <HeaderFact label="Visit Type" value={patient.visitType} />
+              <HeaderFact label="Department" value={patient.department} />
+              <HeaderFact label="Primary Doctor" value={patient.doctor} />
+              <HeaderFact label="Blood Group" value={patient.bloodGroup} />
+              <HeaderFact label="Primary Diagnosis" value={patient.diagnosis} />
+              <HeaderFact label="Secondary Diagnosis" value={patient.secondaryDiagnosis} />
             </div>
           </div>
         </div>
 
-        {/* 3-column layout: left content / center calendar / right sidebar */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px_300px] gap-4 items-start">
-          {/* ================= LEFT: main content ================= */}
           <div className="flex flex-col gap-4 min-w-0">
-            {/* Section 1: Follow-Up Appointment */}
             <Card
               title="Follow-Up Appointment"
               icon={CalendarClock}
@@ -306,20 +615,12 @@ export default function FollowUpSchedulingForm() {
                   <Field label="Reason for Follow-up">
                     <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className={`${inputBase} resize-none`} />
                   </Field>
-
-                  <div className="flex items-start gap-2.5 bg-amber-50 text-amber-700 rounded-lg p-3">
-                    <AlertTriangle size={15} strokeWidth={2.25} className="shrink-0 mt-0.5" />
-                    <p className="text-xs font-medium leading-relaxed">
-                      Dr. Eyob Tesfaye already has 3 follow-ups booked on {followUpDateLabel}. No conflict for the selected {preferredTime} slot — go ahead and confirm.
-                    </p>
-                  </div>
                 </>
               ) : (
                 <p className="text-sm text-gray-400 py-2">Follow-up is marked as not required for this visit.</p>
               )}
             </Card>
 
-            {/* Section 2: Care Plan */}
             <Card title="Care Plan" icon={ClipboardList}>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Treatment Goals">
@@ -339,17 +640,10 @@ export default function FollowUpSchedulingForm() {
                   <CheckboxRow label="Dietician Referral" checked={dietician} onToggle={() => setDietician((v) => !v)} />
                   <CheckboxRow label="Specialist Referral" checked={specialistReferral} onToggle={() => setSpecialistReferral((v) => !v)} />
                   <CheckboxRow label="Nursing Follow-up" checked={nursingFollowUp} onToggle={() => setNursingFollowUp((v) => !v)} />
-                  <CheckboxRow label="Home Care Required" checked={homeCare} onToggle={() => setHomeCare((v) => !v)} />
-                  <CheckboxRow label="Patient Education" checked={patientEducation} onToggle={() => setPatientEducation((v) => !v)} />
                 </div>
               </div>
-
-              <Field label="Next Evaluation Objectives">
-                <textarea value={nextEvalObjectives} onChange={(e) => setNextEvalObjectives(e.target.value)} rows={3} className={`${inputBase} resize-none`} />
-              </Field>
             </Card>
 
-            {/* Section 3: Pre-Follow-Up Requirements */}
             <Card title="Pre-Follow-Up Requirements" icon={FlaskConical} iconTone="text-violet-500">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {PREP_ITEMS.map((item) => {
@@ -375,108 +669,9 @@ export default function FollowUpSchedulingForm() {
                   );
                 })}
               </div>
-              <Field label="Other Preparation Notes">
-                <input
-                  value={otherPrepNotes}
-                  onChange={(e) => setOtherPrepNotes(e.target.value)}
-                  placeholder="Any other instructions for the patient before this visit…"
-                  className={inputBase}
-                />
-              </Field>
-            </Card>
-
-            {/* Section 4: Reminder Settings */}
-            <Card title="Reminder Settings" icon={MessageSquare} iconTone="text-blue-500">
-              <Field label="Reminder Channel">
-                <div className="flex flex-wrap gap-2">
-                  {REMINDER_CHANNELS.map((c) => {
-                    const active = channels.includes(c.key);
-                    const Icon = c.icon;
-                    return (
-                      <button
-                        key={c.key}
-                        type="button"
-                        onClick={() => toggleChannel(c.key)}
-                        className={`flex items-center gap-1.5 text-xs font-bold rounded-full px-3 py-1.5 transition-colors ${
-                          active ? "bg-emerald-600 text-white" : "border border-gray-300 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        <Icon size={12} strokeWidth={2.5} />
-                        {c.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
-
-              <Field label="Reminder Timing">
-                <div className="flex flex-wrap gap-2">
-                  {REMINDER_TIMINGS.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTiming(t)}
-                      className={`text-xs font-bold rounded-full px-3 py-1.5 transition-colors ${
-                        t === timing ? "bg-emerald-600 text-white" : "border border-gray-300 text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </Field>
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-600">Automatic Missed Appointment Reminder</span>
-                <ToggleSwitch checked={autoMissedReminder} onChange={setAutoMissedReminder} />
-              </div>
-
-              <div className="flex items-start gap-2.5 bg-blue-50 text-blue-700 rounded-lg p-3">
-                <Info size={15} strokeWidth={2.25} className="shrink-0 mt-0.5" />
-                <p className="text-xs font-medium leading-relaxed">
-                  Preview: &ldquo;Selamawit, your follow-up with Dr. Eyob Tesfaye is on {followUpDateLabel} at {preferredTime}.&rdquo; will be sent via{" "}
-                  {channels.map((k) => REMINDER_CHANNELS.find((c) => c.key === k)?.label).join(" + ") || "no channel selected"}, {timing.toLowerCase()}.
-                </p>
-              </div>
-            </Card>
-
-            {/* Section 5: Follow-Up Attachments */}
-            <Card title="Follow-Up Attachments" icon={UploadCloud}>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl py-7 px-4 flex flex-col items-center gap-2 text-center bg-[#FBFCFD]">
-                <UploadCloud size={24} strokeWidth={1.75} className="text-gray-300" />
-                <p className="text-sm font-medium text-slate-700">
-                  Drag &amp; drop files here, or <span className="text-teal-700">browse</span>
-                </p>
-                <p className="text-[11px] text-gray-400">Supports JPG, PNG, PDF · Max 10MB per file</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "Clinical Instructions", file: "Post_Visit_Instructions.pdf" },
-                  { label: "Exercise Plan", file: null },
-                  { label: "Diet Plan", file: "Diabetic_Diet_Plan.pdf" },
-                  { label: "Referral Letter", file: null },
-                  { label: "Educational Material", file: null },
-                  { label: "Previous Reports", file: "Lipid_Panel_Apr2025.pdf" },
-                ].map((row) => (
-                  <div key={row.label} className="flex flex-col gap-1.5 border border-gray-200 rounded-lg px-3 py-2.5">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                      <FileText size={13} strokeWidth={2} className="text-gray-400" />
-                      {row.label}
-                    </div>
-                    {row.file ? (
-                      <span className="text-[10.5px] text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5 self-start truncate max-w-full">
-                        {row.file}
-                      </span>
-                    ) : (
-                      <span className="text-[10.5px] text-gray-400">None attached</span>
-                    )}
-                  </div>
-                ))}
-              </div>
             </Card>
           </div>
 
-          {/* ================= CENTER: Appointment Calendar Preview ================= */}
           <div className="flex flex-col gap-4">
             <Card title="Appointment Calendar" icon={Calendar} iconTone="text-teal-600">
               <div className="flex items-center justify-between">
@@ -521,152 +716,53 @@ export default function FollowUpSchedulingForm() {
                   );
                 })}
               </div>
-
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-2 border-t border-gray-100">
-                <span className="flex items-center gap-1.5 text-[11px] text-gray-500"><span className="w-2.5 h-2.5 rounded bg-emerald-600" /> Selected</span>
-                <span className="flex items-center gap-1.5 text-[11px] text-gray-500"><span className="w-2.5 h-2.5 rounded bg-gray-100 border border-gray-200" /> Booked</span>
-                <span className="flex items-center gap-1.5 text-[11px] text-gray-500"><span className="w-2.5 h-2.5 rounded bg-gray-100 border border-gray-200" /> Closure</span>
-                <span className="flex items-center gap-1.5 text-[11px] text-gray-500"><span className="w-2.5 h-2.5 rounded border border-gray-300" /> Available</span>
-              </div>
-
-              <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
-                <span className="text-xs font-bold text-gray-600">Dr. Eyob Tesfaye &mdash; {followUpDateLabel}</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {SLOTS.map((s) => (
-                    <button
-                      key={s.time}
-                      type="button"
-                      disabled={s.status === "booked"}
-                      onClick={() => setPreferredTime(s.time)}
-                      className={`text-[11.5px] font-bold rounded-lg px-2.5 py-1.5 transition-colors ${
-                        s.time === preferredTime
-                          ? "bg-emerald-600 text-white"
-                          : s.status === "booked"
-                          ? "bg-gray-100 text-gray-300 cursor-not-allowed line-through"
-                          : "border border-gray-300 text-gray-600 hover:bg-gray-50"
-                      }`}
-                    >
-                      {s.time}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </Card>
           </div>
 
-          {/* ================= RIGHT: sidebar ================= */}
           <div className="flex flex-col gap-4">
             <Card title="Patient Summary" icon={Users}>
-              <KeyValueRow label="Blood Group" value="O+" />
-              <KeyValueRow label="Weight" value="68 kg" />
-              <KeyValueRow label="Height" value="162 cm" />
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-xs text-gray-400">BMI</span>
-                <span className="text-sm font-bold text-slate-800 tabular-nums flex items-center gap-1.5">
-                  25.9 <Badge tone="amber">Overweight</Badge>
-                </span>
-              </div>
-              <div className="h-px bg-gray-100 my-1" />
-              <KeyValueRow label="Insurance" value="Woreda 07 CBHI" valueClass="text-emerald-600" />
-              <KeyValueRow label="Allergies" value="Penicillin" valueClass="text-red-500" />
-              <KeyValueRow label="Current Medications" value="Amlodipine 5mg OD" />
-              <KeyValueRow label="Emergency Contact" value="Abebe T. · 0911987654" />
+              <KeyValueRow label="Blood Group" value={patient.bloodGroup} />
+              <KeyValueRow label="Allergies" value={patient.allergies} valueClass="text-red-500" />
+              <KeyValueRow label="Insurance" value="Woreda 07 CBHI" valueClass="text-emerald-600 font-semibold" />
+              <KeyValueRow label="Current Medications" value={patient.medications} />
             </Card>
 
             <Card title="Patient Timeline" icon={History} iconTone="text-emerald-600">
               <div className="-mt-1">
-                <TimelineItem title="Registration" detail="09:28 AM · Meron G." state="done" />
-                <TimelineItem title="Vitals" detail="09:30 AM · Nurse Hana" state="done" />
-                <TimelineItem title="Consultation" detail="09:31 AM · Dr. Eyob Tesfaye" state="done" />
-                <TimelineItem title="Clinical Notes" detail="Completed" state="done" />
-                <TimelineItem title="Prescription" detail="Completed" state="done" />
-                <TimelineItem title="Investigation Orders" detail="Completed" state="done" />
-                <TimelineItem title="Follow-Up Scheduling" detail="09:52 AM" state="active" badge="In Progress" />
-              </div>
-            </Card>
-
-            <Card title="Previous Follow-Ups" icon={RefreshCw} iconTone="text-gray-400">
-              {[
-                { date: "Apr 15, 2025", dept: "General Medicine", doctor: "Dr. Eyob Tesfaye", outcome: "Completed" as const },
-                { date: "Feb 10, 2025", dept: "General Medicine", doctor: "Dr. Eyob Tesfaye", outcome: "Completed" as const },
-                { date: "Dec 20, 2024", dept: "General Medicine", doctor: "Dr. Dawit Bekele", outcome: "No-show" as const },
-              ].map((v) => (
-                <button key={v.date} type="button" className="w-full flex items-center justify-between gap-2 py-2 border-b border-gray-50 last:border-0 text-left">
-                  <div className="min-w-0">
-                    <div className="text-[12.5px] font-bold text-slate-800">{v.date}</div>
-                    <div className="text-[11px] text-gray-400 truncate">{v.dept} &middot; {v.doctor}</div>
-                  </div>
-                  <Badge tone={v.outcome === "Completed" ? "emerald" : "red"}>{v.outcome}</Badge>
-                </button>
-              ))}
-            </Card>
-
-            <Card title="Upcoming Appointments" icon={Calendar} iconTone="text-blue-500">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[12.5px] font-bold text-slate-800">Jun 02, 2025</span>
-                  <Badge tone="blue">Confirmed</Badge>
-                </div>
-                <span className="text-[11px] text-gray-400">Dr. Kalkidan Mulugeta &middot; Radiology &middot; 11:00 AM</span>
-                <button type="button" className="self-start mt-1.5 text-[11.5px] font-bold text-teal-700 hover:underline">
-                  Quick Reschedule
-                </button>
+                <TimelineItem title="Registration" detail={`${patient.checkInTime}`} state="done" />
+                <TimelineItem title="Vitals" detail="Nurse Hana" state="done" />
+                <TimelineItem title="Consultation" detail="Completed" state="done" />
+                <TimelineItem title="Follow-Up" detail="Active" state="active" badge="In Progress" />
               </div>
             </Card>
 
             <Card title="AI Follow-Up Recommendation" icon={Sparkles} iconTone="text-violet-500" action={<Badge tone="slate">AI</Badge>}>
               <div className="flex flex-col gap-1">
-                <span className="text-[12px] font-bold text-slate-800">Type 2 Diabetes</span>
-                <ul className="text-[11.5px] text-gray-500 list-disc pl-4 leading-relaxed">
-                  <li>Recommended review in 30 days</li>
-                  <li>HbA1c after 90 days</li>
-                  <li>Blood glucose log review</li>
-                  <li>Medication review &amp; lifestyle assessment</li>
-                </ul>
+                <span className="text-[12px] font-bold text-slate-800">Diabetes &amp; HTN</span>
                 <button
                   type="button"
                   onClick={applyDiabetesRecommendation}
                   className="self-start mt-1.5 text-[11.5px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg px-3 py-1.5 transition-colors"
                 >
-                  Quick Apply
+                  Quick Apply 30D
                 </button>
-              </div>
-              <div className="h-px bg-gray-100" />
-              <div className="flex flex-col gap-1">
-                <span className="text-[12px] font-bold text-slate-800">Hypertension</span>
-                <ul className="text-[11.5px] text-gray-500 list-disc pl-4 leading-relaxed">
-                  <li>Review in 2 weeks</li>
-                  <li>Blood pressure monitoring</li>
-                  <li>Kidney function test &amp; electrolytes</li>
-                </ul>
                 <button
                   type="button"
                   onClick={applyHypertensionRecommendation}
-                  className="self-start mt-1.5 text-[11.5px] font-bold text-emerald-700 border border-emerald-200 hover:bg-emerald-50 rounded-lg px-3 py-1.5 transition-colors"
+                  className="self-start mt-1 text-[11.5px] font-bold text-emerald-700 border border-emerald-200 hover:bg-emerald-50 rounded-lg px-3 py-1.5 transition-colors"
                 >
-                  Quick Apply
+                  Quick Apply 14D
                 </button>
               </div>
-            </Card>
-
-            <Card title="Quick Actions" icon={ClipboardList} iconTone="text-blue-500">
-              <QuickActionButton icon={Calendar} label="Schedule Appointment" tone={{ bg: "bg-emerald-50", text: "text-emerald-700", hover: "hover:bg-emerald-100" }} />
-              <QuickActionButton icon={Printer} label="Print Follow-up Plan" tone={{ bg: "bg-gray-100", text: "text-gray-600", hover: "hover:bg-gray-200" }} />
-              <QuickActionButton icon={GraduationCap} label="Generate Patient Instruction Sheet" tone={{ bg: "bg-blue-50", text: "text-blue-700", hover: "hover:bg-blue-100" }} />
-              <QuickActionButton icon={Send} label="Send Reminder" tone={{ bg: "bg-violet-50", text: "text-violet-700", hover: "hover:bg-violet-100" }} />
-              <QuickActionButton icon={History} label="View Appointment History" tone={{ bg: "bg-gray-100", text: "text-gray-600", hover: "hover:bg-gray-200" }} />
-              <QuickActionButton icon={Save} label="Save Template" tone={{ bg: "bg-amber-50", text: "text-amber-700", hover: "hover:bg-amber-100" }} />
-              <QuickActionButton icon={Ban} label="Cancel Follow-up" tone={{ bg: "bg-red-50", text: "text-red-600", hover: "hover:bg-red-100" }} />
             </Card>
           </div>
         </div>
       </div>
 
-      {/* Sticky footer */}
       <StickyFooter
         left={
           <>
-            <FooterButton tone="danger">Cancel</FooterButton>
+            <FooterButton tone="neutral" onClick={onClear}>Cancel &amp; Return</FooterButton>
             <FooterButton tone="info">Save Draft</FooterButton>
           </>
         }
@@ -676,7 +772,7 @@ export default function FollowUpSchedulingForm() {
               <Printer size={15} strokeWidth={2.25} />
               Preview Follow-up Plan
             </FooterButton>
-            <FooterPrimaryButton>
+            <FooterPrimaryButton onClick={() => onSubmit(followUpDate, preferredTime)}>
               Confirm Follow-Up
               <ArrowRight size={15} strokeWidth={2.25} />
             </FooterPrimaryButton>
@@ -684,5 +780,125 @@ export default function FollowUpSchedulingForm() {
         }
       />
     </div>
+  );
+}
+
+/* ============================================================================
+   Stage 2 — Scheduling Success Screen
+   ========================================================================== */
+
+function SchedulingSuccessScreen({
+  patient,
+  date,
+  time,
+  onBack,
+}: {
+  patient: FollowUpPatient;
+  date: string;
+  time: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="min-h-[85vh] flex items-center justify-center p-6 bg-[#F7F9FA]">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-10 max-w-md w-full text-center flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-200 font-sans">
+        <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+          <CheckCircle2 size={36} strokeWidth={2.5} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <h2 className="text-xl font-bold text-slate-900 font-display">Appointment Scheduled</h2>
+          <p className="text-sm text-gray-500 px-4">
+            A follow-up visit for <strong>{patient.name}</strong> has been successfully booked in the scheduling system.
+          </p>
+        </div>
+        
+        <div className="w-full bg-gray-50 rounded-xl p-4 flex flex-col gap-2.5 text-left border border-gray-100">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-400 font-medium">Patient Name</span>
+            <span className="text-slate-800 font-bold">{patient.name}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-400 font-medium">MRN Code</span>
+            <span className="font-mono text-slate-800 font-bold">{patient.mrn}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs border-t border-gray-200/60 pt-2 mt-1">
+            <span className="text-gray-400 font-medium">Appointment Date</span>
+            <span className="text-emerald-700 font-bold">{date}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-400 font-medium">Time Slot</span>
+            <span className="text-slate-850 font-bold">{time}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full py-2.5 bg-[#148375] hover:bg-[#116a5f] text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 font-display"
+        >
+          <ArrowLeft size={16} strokeWidth={2.5} />
+          Back to Scheduling Queue
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================================
+   Root Export
+   ========================================================================== */
+
+export default function FollowUpSchedulingForm() {
+  const [selectedPatient, setSelectedPatient] = useState<FollowUpPatient | null>(null);
+  const [queue, setQueue] = useState<FollowUpPatient[]>(MOCK_SCHEDULING_QUEUE);
+  const [schedulesCount, setSchedulesCount] = useState(11);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [bookedDate, setBookedDate] = useState("");
+  const [bookedTime, setBookedTime] = useState("");
+
+  const handleSelectPatient = (patient: FollowUpPatient) => {
+    setSelectedPatient(patient);
+    setIsSuccess(false);
+  };
+
+  const handleComplete = (date: string, time: string) => {
+    if (selectedPatient) {
+      setBookedDate(date);
+      setBookedTime(time);
+      setQueue((prev) => prev.filter((p) => p.id !== selectedPatient.id));
+      setSchedulesCount((prev) => prev + 1);
+      setIsSuccess(true);
+    }
+  };
+
+  if (isSuccess && selectedPatient) {
+    return (
+      <SchedulingSuccessScreen
+        patient={selectedPatient}
+        date={bookedDate}
+        time={bookedTime}
+        onBack={() => {
+          setSelectedPatient(null);
+          setIsSuccess(false);
+        }}
+      />
+    );
+  }
+
+  if (!selectedPatient) {
+    return (
+      <SchedulingQueueStage
+        patients={queue}
+        onSelect={handleSelectPatient}
+        schedulesCount={schedulesCount}
+      />
+    );
+  }
+
+  return (
+    <SchedulingIntake
+      patient={selectedPatient}
+      onClear={() => setSelectedPatient(null)}
+      onSubmit={handleComplete}
+    />
   );
 }

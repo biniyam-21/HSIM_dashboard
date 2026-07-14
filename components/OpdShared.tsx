@@ -286,13 +286,19 @@ export function QuickActionButton({
   icon: Icon,
   label,
   tone,
+  onClick,
 }: {
   icon: LucideIcon;
   label: string;
   tone: { bg: string; text: string; hover: string };
+  onClick?: () => void;
 }) {
   return (
-    <button type="button" className={`w-full flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-sm font-bold transition-colors ${tone.bg} ${tone.text} ${tone.hover}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-sm font-bold transition-colors ${tone.bg} ${tone.text} ${tone.hover}`}
+    >
       <Icon size={15} strokeWidth={2.25} />
       {label}
     </button>

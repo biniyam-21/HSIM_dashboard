@@ -6,12 +6,14 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   HelpCircle,
+  Search,
   ChevronDown,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import { NAV_GROUPS, slugify, type NavItem } from "@/lib/navigation";
 import BrandMark from "@/components/BrandMark";
+import { openCommandPalette } from "@/components/CommandPalette";
 
 function GroupHeader({ title }: { title: string }) {
   return (
@@ -66,7 +68,12 @@ function MenuItem({
         aria-expanded={open}
         className="flex items-center gap-3 w-full py-1.5 px-1 cursor-pointer text-left rounded-md hover:bg-white/5 transition-colors"
       >
-        <Icon size={18} strokeWidth={1.75} color="#ffffff" className="shrink-0" />
+        <Icon
+          size={18}
+          strokeWidth={1.75}
+          color="#ffffff"
+          className="shrink-0"
+        />
         <span className="text-sm font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis">
           {item.label}
         </span>
@@ -182,10 +189,42 @@ export default function Sidebar({
         )}
       </header>
 
+      {/* 1.5 Search trigger — pinned above the scrolling nav (and above Dashboard)
+          so it stays reachable no matter how far the module list is scrolled. */}
+      <div
+        className={collapsed ? "flex justify-center px-2 pt-5" : "px-5 pt-5"}
+      >
+        {collapsed ? (
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            title="Search (Ctrl K)"
+            aria-label="Search modules and routes"
+            className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-[#26a69a] hover:text-white focus-visible:bg-white/10 focus-visible:border-[#26a69a] focus:outline-none transition-colors cursor-pointer"
+          >
+            <Search size={16} strokeWidth={2} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            className="w-full flex items-center gap-2.5 h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white/45 hover:bg-white/10 hover:border-[#26a69a] hover:text-white/70 focus-visible:bg-white/10 focus-visible:border-[#26a69a] focus:outline-none transition-colors cursor-pointer"
+          >
+            <Search size={15} strokeWidth={2} className="shrink-0" />
+            <span className="flex-1 text-left text-sm truncate">
+              Search modules &amp; routes
+            </span>
+            <span className="shrink-0 text-[10px] font-semibold tracking-wide text-white/40 bg-white/10 rounded px-1.5 py-0.5">
+              Ctrl K
+            </span>
+          </button>
+        )}
+      </div>
+
       {/* Scrolling menu region */}
       <nav
         className={`sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-3 flex flex-col ${
-          collapsed ? "px-2 " : "px-5"
+          collapsed ? "px-2" : "px-5"
         }`}
       >
         {/* 2. Active Menu Item */}

@@ -26,10 +26,10 @@ import SampleCollectionForm from "@/components/SampleCollectionForm";
 import SampleTrackingForm from "@/components/SampleTrackingForm";
 import ResultEntryForm from "@/components/ResultEntryForm";
 import ResultValidationForm from "@/components/ResultValidationForm";
-import AnalyzerInterfaceForm from "@/components/AnalyzerInterfaceForm";
-import PathologyForm from "@/components/PathologyForm";
-import QualityControlForm from "@/components/QualityControlForm";
-import TestCatalogForm from "@/components/TestCatalogForm";
+// import AnalyzerInterfaceForm from "@/components/AnalyzerInterfaceForm";
+// import PathologyForm from "@/components/PathologyForm";
+// import QualityControlForm from "@/components/QualityControlForm";
+// import TestCatalogForm from "@/components/TestCatalogForm";
 
 // Module/child slug pairs that have a real built page instead of the "Under Development" placeholder.
 const BUILT_PAGES: Record<string, () => JSX.Element> = {
@@ -59,10 +59,10 @@ const BUILT_PAGES: Record<string, () => JSX.Element> = {
   "laboratory-lis/sample-tracking": SampleTrackingForm,
   "laboratory-lis/result-entry": ResultEntryForm,
   "laboratory-lis/result-validation": ResultValidationForm,
-  "laboratory-lis/analyzer-interface": AnalyzerInterfaceForm,
-  "laboratory-lis/pathology": PathologyForm,
-  "laboratory-lis/quality-control": QualityControlForm,
-  "laboratory-lis/test-catalog": TestCatalogForm,
+  // "laboratory-lis/analyzer-interface": AnalyzerInterfaceForm,
+  // "laboratory-lis/pathology": PathologyForm,
+  // "laboratory-lis/quality-control": QualityControlForm,
+  // "laboratory-lis/test-catalog": TestCatalogForm,
 };
 
 function delay(ms: number) {
