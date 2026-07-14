@@ -1252,163 +1252,21 @@ function RejectionDialog({ order, onClose, onConfirm }: { order: ValidationCase;
 /* ---------- page ---------- */
 
 export default function ResultValidationForm() {
-  const [filters, setFilters] = useState<ResultFilters>(EMPTY_FILTERS);
-  const [quickStatus, setQuickStatus] = useState("All");
-  const [clearKey, setClearKey] = useState(0);
-  const [selectedCaseId, setSelectedCaseId] = useState<string>(VALIDATION_CASES[0].id);
-  const [casesState, setCasesState] = useState<ValidationCase[]>(VALIDATION_CASES);
-  const [expandedParamId, setExpandedParamId] = useState<string | null>(null);
-  const [checklist, setChecklist] = useState<Record<string, boolean>>({});
-  const [dialog, setDialog] = useState<"approve" | "reject" | null>(null);
-
-  const kpiCards = useMemo(() => buildKpiCards(casesState), [casesState]);
-
-  const filteredCases = useMemo(() => {
-    const rows = applyFilters(casesState, filters, quickStatus);
-    const priorityRank: Record<Priority, number> = { STAT: 0, Urgent: 1, Routine: 2 };
-    return [...rows].sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority]);
-  }, [casesState, filters, quickStatus]);
-
-  const selectedCase = casesState.find((c) => c.id === selectedCaseId) ?? casesState[0];
-
-  const handleSelectCase = (id: string) => {
-    setSelectedCaseId(id);
-    setExpandedParamId(null);
-    setChecklist({});
-  };
-
-  const handleChange = (partial: Partial<ResultFilters>) => setFilters((prev) => ({ ...prev, ...partial }));
-  const handleQuickStatus = (q: string) => setQuickStatus(q);
-  const handleClearAdvanced = () => {
-    setFilters((prev) => ({ ...prev, ...ADVANCED_DEFAULTS }));
-    setClearKey((k) => k + 1);
-  };
-
-  const toggleChecklistItem = (item: string) => setChecklist((prev) => ({ ...prev, [item]: !prev[item] }));
-
-  const updateCaseStatus = (id: string, status: ValidationStatus, auditAction: string) => {
-    setCasesState((prev) =>
-      prev.map((c) =>
-        c.id !== id
-          ? c
-          : { ...c, status, validator: CURRENT_VALIDATOR, auditTrail: [...c.auditTrail, { time: "Just now", action: auditAction, user: CURRENT_VALIDATOR }] }
-      )
-    );
-  };
-
-  const handleApprove = () => setDialog("approve");
-  const handleReject = () => setDialog("reject");
-
-  const confirmApprove = () => {
-    updateCaseStatus(selectedCaseId, "Approved", "Approved & released to physician");
-    setDialog(null);
-  };
-
-  const confirmReject = (reason: string, comment: string) => {
-    const nextStatus: ValidationStatus = reason === "Repeat Test Required" ? "Repeat Requested" : "Rejected";
-    updateCaseStatus(selectedCaseId, nextStatus, `${nextStatus === "Repeat Requested" ? "Repeat test requested" : "Rejected"} — ${reason}: ${comment}`);
-    setDialog(null);
-  };
-
+  // NOTE: Result Validation page contents temporarily removed for deployment.
+  // The navigation header is preserved so the route still appears in navigation.
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 max-w-[1760px] w-full mx-auto flex flex-col gap-6">
         <ModulePageHeader
           title="Laboratory Result Validation"
           breadcrumb="Diagnostics & Laboratory > Laboratory (LIS) > Result Validation"
-          subtitle="Review completed laboratory findings, compare historical trends, verify quality control, and approve results before release."
-          actions={<HeaderActionButtons />}
+          subtitle="Module content temporarily commented out for deployment."
         />
 
-        <KpiRow cards={kpiCards} onSelect={handleQuickStatus} />
-
-        <ValidationFilterBar
-          filters={filters}
-          clearKey={clearKey}
-          quickStatus={quickStatus}
-          onChange={handleChange}
-          onQuickStatus={handleQuickStatus}
-          onClearAdvanced={handleClearAdvanced}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-[25fr_50fr_25fr] gap-4 items-start">
-          {/* LEFT — Validation Queue */}
-          <div className="flex flex-col gap-2 min-w-0">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-sm font-bold text-slate-800">Validation Queue</h2>
-              <span className="text-xs text-gray-400">{filteredCases.length}</span>
-            </div>
-            <div className="flex flex-col gap-2.5">
-              {filteredCases.length === 0 ? (
-                <div className="bg-white border border-gray-200 rounded-lg shadow-sm py-10 text-center text-sm text-gray-400">No cases match the current filters.</div>
-              ) : (
-                filteredCases.map((c) => <QueueCard key={c.id} order={c} selected={c.id === selectedCaseId} onSelect={() => handleSelectCase(c.id)} />)
-              )}
-            </div>
-          </div>
-
-          {/* CENTER — Clinical Review Workspace */}
-          <div className="flex flex-col gap-4 min-w-0">
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex items-center gap-4 flex-wrap">
-              <Avatar initials={initialsOf(selectedCase.patientName)} />
-              <div className="flex flex-col min-w-0">
-                <span className="text-base font-bold text-slate-900">{selectedCase.patientName}</span>
-                <span className="text-xs text-gray-400">{selectedCase.mrn} · {selectedCase.age} · {selectedCase.gender} · {selectedCase.diagnosis}</span>
-              </div>
-              <div className="flex items-center gap-2 ml-auto">
-                <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${PRIORITY_STYLES[selectedCase.priority]}`}>{selectedCase.priority}</span>
-                <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${VALIDATION_STATUS_STYLES[selectedCase.status]}`}>{selectedCase.status}</span>
-              </div>
-            </div>
-
-            <ResultsReviewTable order={selectedCase} expandedParamId={expandedParamId} onToggleExpand={(id) => setExpandedParamId((prev) => (prev === id ? null : id))} />
-
-            <CriticalValueReviewCard order={selectedCase} />
-
-            <HistoricalComparisonCard order={selectedCase} />
-
-            <QcAnalyzerReviewCard qc={selectedCase.qc} />
-
-            {selectedCase.microbiology && <MicrobiologyCard report={selectedCase.microbiology} />}
-          </div>
-
-          {/* RIGHT — Decision Support Panel */}
-          <div className="flex flex-col gap-4 min-w-0">
-            <PatientSummaryCard order={selectedCase} />
-            <OrderSummaryCard order={selectedCase} />
-            <ValidationChecklistCard checklist={checklist} onToggle={toggleChecklistItem} />
-            <ClinicalDecisionSupportCard order={selectedCase} />
-            <AuditTrailCard events={selectedCase.auditTrail} />
-            <QuickActionsCard onApprove={handleApprove} onReject={handleReject} />
-          </div>
+        <div className="bg-white border border-gray-100 rounded-lg p-6 text-sm text-gray-500">
+          Result Validation UI is temporarily disabled for deployment. Original implementation retained in Git history.
         </div>
       </div>
-
-      <StickyFooter
-        left={
-          <>
-            <FooterButton tone="danger">Cancel</FooterButton>
-            <FooterButton tone="info">Save Review</FooterButton>
-          </>
-        }
-        right={
-          <>
-            <FooterButton tone="danger" onClick={handleReject}>
-              <ClipboardX size={15} strokeWidth={2.25} /> Reject
-            </FooterButton>
-            <FooterButton tone="neutral" onClick={handleReject}>
-              <Repeat size={15} strokeWidth={2.25} /> Request Repeat
-            </FooterButton>
-            <button type="button" onClick={handleApprove} className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition-colors">
-              <Send size={15} strokeWidth={2.25} />
-              Approve &amp; Release to Physician
-            </button>
-          </>
-        }
-      />
-
-      {dialog === "approve" && <ApprovalDialog order={selectedCase} onClose={() => setDialog(null)} onConfirm={confirmApprove} />}
-      {dialog === "reject" && <RejectionDialog order={selectedCase} onClose={() => setDialog(null)} onConfirm={confirmReject} />}
     </div>
   );
 }

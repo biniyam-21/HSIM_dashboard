@@ -1138,196 +1138,21 @@ function HeaderActionButtons() {
 /* ---------- page ---------- */
 
 export default function ResultEntryForm() {
-  const [filters, setFilters] = useState<ResultFilters>(EMPTY_FILTERS);
-  const [quickStatus, setQuickStatus] = useState("All");
-  const [clearKey, setClearKey] = useState(0);
-  const [selectedOrderId, setSelectedOrderId] = useState<string>(ORDERS_QUEUE[0].id);
-  const [ordersState, setOrdersState] = useState<LabResultOrder[]>(ORDERS_QUEUE);
-  const [selectedTestId, setSelectedTestId] = useState<string | null>(ORDERS_QUEUE[0].rows[0]?.id ?? null);
-  const [savingState, setSavingState] = useState<"idle" | "saving" | "saved">("idle");
-  const [lastEdit, setLastEdit] = useState<{ orderId: string; rowId: string; previousValue: string; previousFlag: Flag; previousStatus: RowStatus } | null>(null);
-
-  const inputRefs = useRef<Record<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>>({});
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const kpiCards = useMemo(() => buildKpiCards(ordersState), [ordersState]);
-
-  const filteredOrders = useMemo(() => {
-    const rows = applyFilters(ordersState, filters, quickStatus);
-    const priorityRank: Record<Priority, number> = { STAT: 0, Urgent: 1, Routine: 2 };
-    return [...rows].sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority]);
-  }, [ordersState, filters, quickStatus]);
-
-  const selectedOrder = ordersState.find((o) => o.id === selectedOrderId) ?? ordersState[0];
-  const selectedTestRow = selectedOrder.rows.find((r) => r.id === selectedTestId) ?? null;
-
-  const triggerAutosave = () => {
-    setSavingState("saving");
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => setSavingState("saved"), 900);
-  };
-
-  const updateRow = (rowId: string, updater: (r: ResultRow) => ResultRow) => {
-    setOrdersState((prev) =>
-      prev.map((o) => (o.id !== selectedOrderId ? o : { ...o, rows: o.rows.map((r) => (r.id === rowId ? updater(r) : r)) }))
-    );
-  };
-
-  const handleSelectOrder = (id: string) => {
-    setSelectedOrderId(id);
-    const order = ordersState.find((o) => o.id === id);
-    setSelectedTestId(order?.rows[0]?.id ?? null);
-  };
-
-  const handleChangeValue = (rowId: string, value: string) => {
-    const current = selectedOrder.rows.find((r) => r.id === rowId);
-    if (current) setLastEdit({ orderId: selectedOrderId, rowId, previousValue: current.value, previousFlag: current.flag, previousStatus: current.status });
-
-    updateRow(rowId, (r) => {
-      const nextFlag = r.resultType === "numeric" ? computeNumericFlag(value, r) : r.flag;
-      const wasAnalyzerOnly = !!r.analyzerValue && !r.edited;
-      return {
-        ...r,
-        value,
-        flag: nextFlag,
-        edited: r.analyzerValue ? true : r.edited || value.trim().length > 0,
-        editedBy: r.analyzerValue || value.trim().length > 0 ? "Selam Getachew" : r.editedBy,
-        editedAt: r.analyzerValue || value.trim().length > 0 ? "Just now" : r.editedAt,
-        status: wasAnalyzerOnly ? "Manually Edited" : value.trim().length > 0 ? "Manually Edited" : "Pending",
-        pendingConfirm: isCritical(nextFlag) && !r.pendingConfirm ? true : r.pendingConfirm && isCritical(nextFlag),
-      };
-    });
-    triggerAutosave();
-  };
-
-  const handleConfirmCritical = (rowId: string) => {
-    updateRow(rowId, (r) => ({ ...r, pendingConfirm: false }));
-  };
-
-  const handleCopyPrevious = (rowId: string) => {
-    const r = selectedOrder.rows.find((row) => row.id === rowId);
-    if (!r || r.history.length === 0) return;
-    handleChangeValue(rowId, r.history[0].value);
-  };
-
-  const handleCommentChange = (rowId: string, comment: string) => {
-    updateRow(rowId, (r) => ({ ...r, comment }));
-    triggerAutosave();
-  };
-
-  const handleUndo = () => {
-    if (!lastEdit) return;
-    setOrdersState((prev) =>
-      prev.map((o) =>
-        o.id !== lastEdit.orderId
-          ? o
-          : { ...o, rows: o.rows.map((r) => (r.id === lastEdit.rowId ? { ...r, value: lastEdit.previousValue, flag: lastEdit.previousFlag, status: lastEdit.previousStatus } : r)) }
-      )
-    );
-    setLastEdit(null);
-  };
-
-  const registerInputRef = (id: string, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null) => {
-    inputRefs.current[id] = el;
-  };
-
-  const handleArrowNav = (rowId: string, dir: "up" | "down") => {
-    const idx = selectedOrder.rows.findIndex((r) => r.id === rowId);
-    const nextIdx = dir === "down" ? idx + 1 : idx - 1;
-    const nextRow = selectedOrder.rows[nextIdx];
-    if (nextRow) inputRefs.current[nextRow.id]?.focus();
-  };
-
-  const handleChange = (partial: Partial<ResultFilters>) => setFilters((prev) => ({ ...prev, ...partial }));
-  const handleQuickStatus = (q: string) => setQuickStatus(q);
-  const handleClearAdvanced = () => {
-    setFilters((prev) => ({ ...prev, ...ADVANCED_DEFAULTS }));
-    setClearKey((k) => k + 1);
-  };
-
+  // NOTE: Result Entry page contents temporarily removed for deployment.
+  // The navigation header is preserved so the route still appears in navigation.
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 max-w-[1760px] w-full mx-auto flex flex-col gap-6">
         <ModulePageHeader
           title="Laboratory Result Entry"
           breadcrumb="Diagnostics & Laboratory > Laboratory (LIS) > Result Entry"
-          subtitle="Review analyzer output, enter laboratory findings, detect abnormal values, and submit results for validation."
-          actions={<HeaderActionButtons />}
+          subtitle="Module content temporarily commented out for deployment."
         />
 
-        <KpiRow cards={kpiCards} onSelect={handleQuickStatus} />
-
-        <ResultFilterBar
-          filters={filters}
-          clearKey={clearKey}
-          quickStatus={quickStatus}
-          onChange={handleChange}
-          onQuickStatus={handleQuickStatus}
-          onClearAdvanced={handleClearAdvanced}
-        />
-
-        {/* Result Entry Queue */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-bold text-slate-800">Result Entry Queue</h2>
-            <span className="text-xs text-gray-400">{filteredOrders.length} orders</span>
-          </div>
-          <div className="flex items-stretch gap-3 overflow-x-auto pb-1">
-            {filteredOrders.map((o) => (
-              <QueueChip key={o.id} order={o} selected={o.id === selectedOrderId} onSelect={() => handleSelectOrder(o.id)} />
-            ))}
-          </div>
-        </div>
-
-        <AbnormalResultPanel order={selectedOrder} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-[65fr_35fr] gap-4 items-start">
-          <ResultSpreadsheet
-            order={selectedOrder}
-            rows={selectedOrder.rows}
-            selectedTestId={selectedTestId}
-            onSelectTest={setSelectedTestId}
-            onChangeValue={handleChangeValue}
-            onConfirmCritical={handleConfirmCritical}
-            onCopyPrevious={handleCopyPrevious}
-            onCommentChange={handleCommentChange}
-            registerInputRef={registerInputRef}
-            onArrowNav={handleArrowNav}
-            savingState={savingState}
-            onUndo={handleUndo}
-            canUndo={!!lastEdit}
-          />
-
-          <div className="flex flex-col gap-4 min-w-0">
-            <PatientSummaryCard order={selectedOrder} />
-            <OrderSummaryCard order={selectedOrder} />
-            <ReferenceInformationCard testRow={selectedTestRow} />
-            <HistoricalResultsCard testRow={selectedTestRow} />
-            <CriticalAlertsCard order={selectedOrder} />
-            <QuickActionsCard />
-          </div>
+        <div className="bg-white border border-gray-100 rounded-lg p-6 text-sm text-gray-500">
+          Result Entry UI is temporarily disabled for deployment. Original implementation retained in Git history.
         </div>
       </div>
-
-      <StickyFooter
-        left={
-          <>
-            <FooterButton tone="danger">Cancel</FooterButton>
-            <FooterButton tone="info">Save Draft</FooterButton>
-          </>
-        }
-        right={
-          <>
-            <FooterButton tone="neutral">
-              <FileText size={15} strokeWidth={2.25} /> Preview Report
-            </FooterButton>
-            <button type="button" className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition-colors">
-              <Send size={15} strokeWidth={2.25} />
-              Submit Results for Validation
-            </button>
-          </>
-        }
-      />
     </div>
   );
 }

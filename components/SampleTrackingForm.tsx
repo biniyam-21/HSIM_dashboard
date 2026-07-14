@@ -1149,121 +1149,21 @@ function HeaderActionButtons() {
 /* ---------- page ---------- */
 
 export default function SampleTrackingForm() {
-  const [filters, setFilters] = useState<TrackingFilters>(EMPTY_FILTERS);
-  const [quickStatus, setQuickStatus] = useState("All");
-  const [clearKey, setClearKey] = useState(0);
-  const [selectedId, setSelectedId] = useState<string | null>(SPECIMEN_TRACKS[0]?.id ?? null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const kpiCards = useMemo(() => buildKpiCards(SPECIMEN_TRACKS), []);
-
-  const filteredRows = useMemo(() => {
-    const rows = applyFilters(SPECIMEN_TRACKS, filters, quickStatus);
-    const priorityRank: Record<Priority, number> = { STAT: 0, Urgent: 1, Routine: 2 };
-    return [...rows].sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority]);
-  }, [filters, quickStatus]);
-
-  const selectedOrder = selectedId ? SPECIMEN_TRACKS.find((o) => o.id === selectedId) ?? null : null;
-
-  const handleChange = (partial: Partial<TrackingFilters>) => {
-    setFilters((prev) => ({ ...prev, ...partial }));
-  };
-
-  const handleQuickStatus = (q: string) => setQuickStatus(q);
-
-  const handleClearAdvanced = () => {
-    setFilters((prev) => ({ ...prev, ...ADVANCED_DEFAULTS }));
-    setClearKey((k) => k + 1);
-  };
-
+  // NOTE: Sample Tracking page contents temporarily removed for deployment.
+  // The navigation header is preserved so the route still appears in navigation.
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 max-w-[1760px] w-full mx-auto flex flex-col gap-6">
         <ModulePageHeader
           title="Sample Tracking"
           breadcrumb="Diagnostics & Laboratory > Laboratory (LIS) > Sample Tracking"
-          subtitle="Monitor specimen movement, chain of custody, transport status, laboratory processing, and turnaround time."
-          actions={<HeaderActionButtons />}
+          subtitle="Module content temporarily commented out for deployment."
         />
 
-        <KpiRow cards={kpiCards} onSelect={handleQuickStatus} />
-
-        <TrackingFilterBar
-          filters={filters}
-          clearKey={clearKey}
-          quickStatus={quickStatus}
-          onChange={handleChange}
-          onQuickStatus={handleQuickStatus}
-          onClearAdvanced={handleClearAdvanced}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-[70fr_30fr] gap-4 items-start">
-          {/* Left: live tracking board */}
-          <div className="flex flex-col gap-3 min-w-0">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-sm font-bold text-slate-800">Live Specimen Tracking Board</h2>
-              <span className="text-xs text-gray-400">{filteredRows.length} specimens</span>
-            </div>
-            {filteredRows.length === 0 ? (
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm py-14 text-center text-sm text-gray-400">
-                No specimens match the current filters.
-              </div>
-            ) : (
-              filteredRows.map((o) => (
-                <TrackingCard
-                  key={o.id}
-                  order={o}
-                  selected={o.id === selectedId}
-                  expanded={expandedId === o.id}
-                  onSelect={() => setSelectedId(o.id)}
-                  onToggleExpand={() => setExpandedId((prev) => (prev === o.id ? null : o.id))}
-                />
-              ))
-            )}
-          </div>
-
-          {/* Right: selected sample information */}
-          <div className="flex flex-col gap-4 min-w-0">
-            {selectedOrder ? (
-              <>
-                <PatientSummaryCard order={selectedOrder} />
-                <SpecimenInformationCard order={selectedOrder} />
-                <InvestigationSummaryCard order={selectedOrder} />
-                <LiveProgressCard order={selectedOrder} />
-                <AlertsCard order={selectedOrder} />
-                <QuickActionsCard order={selectedOrder} />
-              </>
-            ) : (
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-center text-sm text-gray-400">
-                Select a specimen from the tracking board to see its details here.
-              </div>
-            )}
-          </div>
+        <div className="bg-white border border-gray-100 rounded-lg p-6 text-sm text-gray-500">
+          Sample Tracking UI is temporarily disabled for deployment. Original implementation retained in Git history.
         </div>
       </div>
-
-      <StickyFooter
-        left={
-          <>
-            <FooterButton tone="danger">Cancel</FooterButton>
-            <FooterButton tone="info">Save</FooterButton>
-          </>
-        }
-        right={
-          <>
-            <FooterButton tone="neutral">
-              <Send size={15} strokeWidth={2.25} /> Transfer Sample
-            </FooterButton>
-            <FooterButton tone="neutral">
-              <PackageCheck size={15} strokeWidth={2.25} /> Mark Received
-            </FooterButton>
-            <button type="button" className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition-colors">
-              <FlaskConical size={15} strokeWidth={2.25} />
-              Start Processing
-            </button>
-          </>
-        }
-      />
     </div>
   );
 }
