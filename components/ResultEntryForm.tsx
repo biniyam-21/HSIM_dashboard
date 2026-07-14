@@ -38,6 +38,7 @@ import {
   Microscope,
 } from "lucide-react";
 import ModulePageHeader from "@/components/ModulePageHeader";
+import UnderDevelopment from "@/components/UnderDevelopment";
 import { FieldLabel, inputClass, Card, Avatar } from "@/components/FormFields";
 import DatePicker from "@/components/DatePicker";
 import { StickyFooter, FooterButton } from "@/components/OpdShared";
@@ -1138,20 +1139,16 @@ function HeaderActionButtons() {
 /* ---------- page ---------- */
 
 export default function ResultEntryForm() {
-  // NOTE: Result Entry page contents temporarily removed for deployment.
-  // The navigation header is preserved so the route still appears in navigation.
+  // Show the standard UnderDevelopment page while keeping the header/navigation.
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 max-w-[1760px] w-full mx-auto flex flex-col gap-6">
         <ModulePageHeader
           title="Laboratory Result Entry"
           breadcrumb="Diagnostics & Laboratory > Laboratory (LIS) > Result Entry"
-          subtitle="Module content temporarily commented out for deployment."
         />
 
-        <div className="bg-white border border-gray-100 rounded-lg p-6 text-sm text-gray-500">
-          Result Entry UI is temporarily disabled for deployment. Original implementation retained in Git history.
-        </div>
+        <UnderDevelopment entry={null} fallbackSlug={["result-entry"]} />
       </div>
     </div>
   );
